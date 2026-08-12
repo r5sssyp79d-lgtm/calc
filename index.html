@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Растаможка">
+<meta name="theme-color" content="#8a5a2b">
+<title>Калькулятор расходов — авто из Японии</title>
+<style>
+:root{
+  --bg:#f6f6f4; --panel:#ffffff; --ink:#1c1b19; --muted:#77736c; --line:#e3e0da;
+  --accent:#8a5a2b; --accent-soft:#f3ece3; --good:#3f6b4a; --warn:#9a6b1e; --warn-bg:#fdf5e6;
+  --radius:10px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+header h1{font-size:24px;margin:0 0 4px;letter-spacing:-.01em}
+header .sub{color:var(--muted);font-size:13.5px;margin:0 0 22px}
+header .sub b{color:var(--ink);font-weight:600}
+.grid{display:grid;grid-template-columns:minmax(320px,400px) 1fr;gap:20px;align-items:start}
+.grid>div{min-width:0}
+@media(max-width:880px){.grid{grid-template-columns:1fr}}
+html,body{max-width:100%;overflow-x:hidden}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+  margin:0 0 14px;font-weight:600}
+.card + .card{margin-top:16px}
+label{display:block;font-size:12.5px;color:var(--muted);margin:0 0 5px}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+select,input[type=number],input[type=text]{
+  width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:7px;background:#fff;
+  font-size:14.5px;color:var(--ink);font-family:inherit;-webkit-appearance:none;appearance:none}
+select{background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2377736c'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+select:focus,input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chk{display:flex;align-items:flex-start;gap:8px;font-size:13.5px;color:var(--ink);margin-top:8px;cursor:pointer}
+.chk input{margin-top:2px;flex:0 0 auto}
+.hint{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.4}
+.hint.warn{color:var(--warn)}
+table.calc{width:100%;border-collapse:collapse;font-size:14.5px}
+table.calc td{padding:8px 0;border-bottom:1px solid var(--line);vertical-align:baseline}
+table.calc td.v{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:500}
+table.calc tr.zero td{color:#a9a49c}
+table.calc tr.minus td.v{color:var(--good)}
+table.calc td small{display:block;color:var(--muted);font-size:11.5px;font-weight:400;line-height:1.35;margin-top:2px}
+table.calc tr.sub td{border-top:1px solid var(--ink);border-bottom:none;padding-top:10px;font-weight:600}
+table.calc tr.total td{border-bottom:none;padding-top:12px;font-size:20px;font-weight:600;letter-spacing:-.01em}
+table.calc tr.total td small{font-size:14px;color:var(--ink);opacity:.65;font-weight:500;margin-top:3px}
+.pdfbtn{margin-top:16px;width:100%;padding:12px 14px;border:0;border-radius:8px;background:var(--accent);
+  color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;letter-spacing:.01em}
+.pdfbtn:hover{background:#734619}
+.pdfbtn:active{transform:translateY(1px)}
+.fx{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.fx div{font-size:13px;color:var(--muted)}
+.fx b{display:block;font-size:18px;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600;margin-top:1px}
+.badge{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:5px;
+  padding:2px 7px;font-size:11.5px;font-weight:600;letter-spacing:.02em}
+.note{background:var(--warn-bg);border:1px solid #f0dfbe;border-radius:8px;padding:11px 13px;
+  font-size:12.5px;color:#6b4d16;line-height:1.5;margin-top:14px}
+.note b{font-weight:600}
+.note ul{margin:6px 0 0;padding-left:17px}
+.note li{margin:2px 0}
+table.cmp{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:4px}
+table.cmp th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted);font-weight:600;padding:0 8px 7px 0;border-bottom:1px solid var(--line)}
+table.cmp th:last-child,table.cmp td:last-child{text-align:right;padding-right:0}
+table.cmp td{padding:7px 8px 7px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+table.cmp tr.cur{background:var(--accent-soft)}
+table.cmp tr.cur td{font-weight:600}
+table.cmp td.d{color:var(--muted);font-size:12.5px}
+.foot{color:var(--muted);font-size:12px;margin-top:26px;line-height:1.6;border-top:1px solid var(--line);padding-top:14px}
+.dep{font-size:13px;line-height:1.6}
+.dep span{color:var(--muted)}
+.dep b{font-variant-numeric:tabular-nums}
+
+/* ===== Мобильная адаптация (iPhone) ===== */
+@media(max-width:640px){
+  .wrap{padding:14px 12px 48px}
+  header h1{font-size:20px}
+  header .sub{font-size:12.5px;margin-bottom:16px}
+  .grid{gap:14px}
+  .card{padding:14px;border-radius:12px}
+  .card + .card{margin-top:12px}
+  label{font-size:13px}
+  /* 16px — чтобы iOS не зумил при фокусе; крупнее тап-таргеты */
+  select,input[type=number],input[type=text]{font-size:16px;padding:12px 12px;border-radius:9px}
+  select{background-position:right 12px center;padding-right:32px}
+  .row2{gap:8px}
+  table.calc{font-size:15px}
+  table.calc td{padding:9px 0}
+  table.calc tr.total td{font-size:19px}
+  .pdfbtn{padding:15px 14px;font-size:16px;position:sticky;bottom:8px}
+  /* широкая таблица сравнения портов — горизонтальный скролл */
+  .cmpwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -14px;padding:0 14px}
+  table.cmp{font-size:13px;min-width:440px}
+  .note{font-size:12px}
+}
+@media(hover:none){ .pdfbtn:active{background:#734619} }
+
+/* ===== Печатный бланк внутри страницы (PDF на iOS через «Поделиться») ===== */
+#pdfArea{display:none}
+#pdfArea{font:13px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#1c1b19}
+#pdfArea h1{font-size:22px;margin:0 0 2px}
+#pdfArea .sub{color:#77736c;font-size:12.5px;margin:0 0 4px}
+#pdfArea .box{border:1px solid #e3e0da;border-radius:10px;padding:14px 16px;margin-top:16px}
+#pdfArea .box h2{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:#77736c;margin:0 0 10px}
+#pdfArea table{width:100%;border-collapse:collapse;font-size:14px}
+#pdfArea td{padding:7px 0;border-bottom:1px solid #eee;vertical-align:baseline}
+#pdfArea td.v{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+#pdfArea tr.sub td{color:#555;font-size:12.5px;border-bottom:1px dashed #eee;padding-left:14px}
+#pdfArea tr.head td{font-weight:600;border-bottom:1px solid #ccc}
+#pdfArea tr.grand td{font-size:21px;font-weight:700;border-bottom:none;padding-top:14px}
+#pdfArea tr.dep td{border-top:1px solid #ccc;font-weight:600;color:#3f6b4a}
+#pdfArea .carbox{border:1px solid #e3e0da;border-radius:10px;padding:8px 16px;margin-top:12px;background:#faf9f7}
+#pdfArea .carbox table{font-size:13.5px}
+#pdfArea .carbox td{border:0;padding:3px 0;font-weight:400}
+#pdfArea .carbox td.lbl{color:#77736c;width:160px}
+#pdfArea .note{color:#8a7a58;background:#fdf5e6;border:1px solid #f0dfbe;border-radius:8px;padding:11px 13px;font-size:11.5px;margin-top:16px;line-height:1.5}
+@media print{
+  html,body{background:#fff}
+  body>.wrap{display:none !important}
+  #pdfArea{display:block !important;padding:0}
+  @page{margin:14mm}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Расходы на автомобиль из Японии</h1>
+  <p class="sub">Базис <b>C&amp;F Владивосток (RO-RO)</b> · тарифная сетка от <b>22.05.2026</b></p>
+</header>
+
+<div class="grid">
+  <div>
+    <div class="card">
+      <h2>Автомобиль и маршрут</h2>
+      <div class="field">
+        <label for="price">Цена на аукционе, ¥</label>
+        <input type="number" id="price" value="" min="0" step="10000" placeholder="0">
+        <div class="hint" id="priceHint"></div>
+      </div>
+      <div class="field">
+        <label for="auction">Аукцион</label>
+        <select id="auction"></select>
+      </div>
+      <div class="field">
+        <label for="port">Порт отправления / линия</label>
+        <select id="port"></select>
+        <div class="hint" id="portHint"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Условия покупки</h2>
+      <div class="field">
+        <label for="buytype">Способ покупки</label>
+        <select id="buytype">
+          <option value="0">Обычная ставка на аукционе — 0 ¥</option>
+          <option value="10000">Покупка по переговорам — +10 000 ¥</option>
+          <option value="15000">Покупка с One Price — +15 000 ¥</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="status">Статус покупателя</label>
+        <select id="status">
+          <option value="0">Дилер / юрлицо — 0 ¥</option>
+          <option value="35000">Индивидуальный покупатель — +35 000 ¥</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="loyal">Уровень лояльности</label>
+        <select id="loyal">
+          <option value="none">Нет / первая покупка в периоде</option>
+          <option value="bronze">BRONZE — 2–9 авто/мес</option>
+          <option value="silver">SILVER — 10–24 авто/мес</option>
+          <option value="gold">GOLD — 25–49 авто/мес</option>
+          <option value="platinum">PLATINUM — 50+ авто/мес</option>
+        </select>
+        <label class="chk"><input type="checkbox" id="second" checked><span>Вторая и последующая покупка в периоде (25-е → 24-е число) — кешбэк начисляется</span></label>
+      </div>
+      <div class="field">
+        <label for="days">Дней на стоянке в Японии</label>
+        <input type="number" id="days" value="0" min="0" step="1">
+        <div class="hint" id="daysHint"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Растаможка · Владивосток</h2>
+      <div class="field">
+        <label for="owner">Кто растамаживает</label>
+        <select id="owner">
+          <option value="person">Физлицо — личное пользование (ЕТС + льгота утиль)</option>
+          <option value="resale">Физлицо — для перепродажи (ЕТС, утиль без льготы)</option>
+          <option value="company">Юрлицо / коммерческий ввоз</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="age">Возраст авто</label>
+        <select id="age">
+          <option value="u3">До 3 лет</option>
+          <option value="a35" selected>3–5 лет</option>
+          <option value="a57">5–7 лет</option>
+          <option value="a7">Старше 7 лет</option>
+        </select>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="fuel">Двигатель</label>
+          <select id="fuel">
+            <option value="petrol">Бензиновый</option>
+            <option value="diesel">Дизельный</option>
+            <option value="hyb_par">Параллельный гибрид</option>
+            <option value="hyb_ser">Последовательный гибрид</option>
+            <option value="electro">Электрический</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="vol">Объём, см³</label>
+          <input type="number" id="vol" value="1500" min="0" step="100">
+        </div>
+      </div>
+      <div class="field">
+        <label for="power">Мощность, л.с.</label>
+        <input type="number" id="power" value="0" min="0" step="1" placeholder="0">
+        <div class="hint">Для акциза (юрлицо) и льготного утильсбора (физлицо ≤ 160 л.с.).</div>
+      </div>
+      <div class="field">
+        <label for="cval">Таможенная стоимость, ₽</label>
+        <input type="number" id="cval" value="" min="0" step="1000" placeholder="итог по Японии × курс">
+        <div class="hint" id="cvalHint">Пусто — подставляется итог по Японии, пересчитанный в рубли.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Курс и расходы</h2>
+      <div class="row2">
+        <div class="field">
+          <label for="jpyRate">Курс ¥ → ₽</label>
+          <input type="number" id="jpyRate" value="0.55" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label for="eurRate">Курс € → ₽ (ЦБ)</label>
+          <input type="number" id="eurRate" value="95" min="0" step="0.1">
+        </div>
+      </div>
+      <div class="field">
+        <label for="broker">Расходы на брокера, ₽</label>
+        <input type="number" id="broker" value="60000" min="0" step="1000">
+      </div>
+      <div class="field">
+        <label for="jpExtra">Дополнительные расходы по Японии, ¥ <span style="text-transform:none;font-weight:400;letter-spacing:0">— необязательно</span></label>
+        <input type="number" id="jpExtra" value="0" min="0" step="1000">
+        <div class="hint">Прибавляется к итогу до Владивостока (в иенах, до пересчёта в рубли).</div>
+      </div>
+      <div class="field">
+        <label for="extra">Дополнительные расходы по России, ₽ <span style="text-transform:none;font-weight:400;letter-spacing:0">— необязательно</span></label>
+        <input type="number" id="extra" value="0" min="0" step="1000">
+      </div>
+      <div class="field">
+        <label for="margin">Маржа, ₽</label>
+        <input type="number" id="margin" value="0" min="0" step="1000">
+      </div>
+      <div class="hint">Курс и суммы сохраняются в браузере и подставляются при следующем расчёте.</div>
+    </div>
+
+    <div class="card">
+      <h2>Информация об автомобиле <span style="text-transform:none;font-weight:400;letter-spacing:0;color:var(--muted)">— в документ</span></h2>
+      <div class="field">
+        <label for="carModel">Марка и модель</label>
+        <input type="text" id="carModel" placeholder="Toyota Land Cruiser Prado 150">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="carYear">Год выпуска</label>
+          <input type="text" id="carYear" placeholder="2022">
+        </div>
+        <div class="field">
+          <label for="carGrade">Оценка</label>
+          <input type="text" id="carGrade" placeholder="4.5">
+        </div>
+      </div>
+      <div class="field">
+        <label for="carMileage">Пробег, км</label>
+        <input type="text" id="carMileage" placeholder="35 000">
+      </div>
+      <div class="field">
+        <label for="carLot">№ лота</label>
+        <input type="text" id="carLot" placeholder="123456">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Депозит (предоплата)</h2>
+      <div class="field">
+        <label for="deposit">Внесённый депозит, ₽</label>
+        <input type="number" id="deposit" value="0" min="0" step="1000">
+        <div class="hint">Вычитается из итоговой суммы и из «Итого» в документе.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div>
+    <div class="card">
+      <h2>Расчёт <span class="badge" id="routeBadge"></span></h2>
+      <table class="calc"><tbody id="out"></tbody></table>
+      <div class="note" id="notes"></div>
+    </div>
+
+    <div class="card">
+      <h2>Растаможка <span class="badge" id="custBadge"></span></h2>
+      <table class="calc"><tbody id="custOut"></tbody></table>
+      <div class="hint" id="custNote" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Итоговая стоимость автомобиля</h2>
+      <table class="calc"><tbody id="finalOut"></tbody></table>
+      <button type="button" id="pdfBtn" class="pdfbtn">📄 Скачать PDF для клиента</button>
+    </div>
+
+    <div class="card">
+      <h2>Депозит и лимит закупки</h2>
+      <div class="dep" id="dep"></div>
+    </div>
+
+    <div class="card">
+      <h2>Сравнение портов для выбранного аукциона</h2>
+      <div class="cmpwrap">
+      <table class="cmp">
+        <thead><tr><th>Порт / линия</th><th>C&amp;F, ¥</th><th>Δ к текущему</th><th>Итого, ¥</th></tr></thead>
+        <tbody id="cmp"></tbody>
+      </table>
+      </div>
+      <div class="hint" id="cmpNote" style="margin-top:10px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="foot">
+  <b>Входит в расчёт:</b> расходы по Японии до Владивостока (¥ и ₽ по курсу), растаможка РФ (пошлина, утильсбор, таможенный сбор, для юрлиц — акциз и НДС), брокер, дополнительные расходы и маржа.<br>
+  <b>Что НЕ входит:</b> СБКТС/ЭПТС; прочие расходы во Владивостоке (выгрузка, СВХ сверх брокера); распил/конструктор; доставка от Владивостока далее.<br>
+  Аварийные авто, авто без оценки и спецтехника — расходы выставляются по факту. Фрахт на грузовые уточняется отдельно. При росте фрахта у судоходных линий конечная цена пересчитывается.
+</div>
+</div>
+
+<script>
+const DATA = {"ports":[{"name":"TOYAMA · PHENIX ASIA","park":"phenix_maizuru_toyama","promo":false},{"name":"TOYAMA · MIRAI LINE","park":"mirai_toyama","promo":false},{"name":"KISARAZU · PHENIX ASIA","park":"phenix_kisarazu","promo":false},{"name":"YOKOHAMA · MIRAI-LINE","park":"mirai_yokohama","promo":true},{"name":"KAWASAKI · BRIDGEHEAD","park":null,"promo":false},{"name":"MAIZURU · PHENIX ASIA","park":"phenix_maizuru_toyama","promo":false},{"name":"MAIZURU · MW-LINE","park":"mw","promo":false},{"name":"NAGOYA · PHENIX ASIA","park":"phenix_kisarazu","promo":false},{"name":"OSAKA · MIRAI-LINE","park":"mirai_osaka","promo":false},{"name":"OTARU · PHENIX ASIA","park":"phenix_otaru","promo":false},{"name":"IMARI · MW-LINE","park":"mw","promo":false},{"name":"SHIN-MOJI · PHENIX ASIA","park":"phenix_kisarazu","promo":false}],"rows":[["ARAI BAYSIDE","KANTO",[117000,117000,111500,111500,111500,null,null,125500,null,null,null,null]],["ARAI OYAMA","KANTO",[119000,119000,122000,122000,122000,null,null,136000,null,null,null,null]],["ARAI OYAMA V/T","KANTO",[119000,119000,122000,122000,122000,null,null,136000,null,null,null,null]],["ARAI SENDAI","TOHOKU",[123000,123000,122000,122000,122000,null,null,null,null,null,null,null]],["BAYAUC","KANSAI",[107000,107000,null,128500,null,101000,108000,114500,108500,null,null,null]],["CAA CHUBU","CHUBU",[103000,103000,128500,128500,128500,108000,115000,108500,116500,null,null,null]],["CAA GIFU","CHUBU",[103000,103000,129000,129000,129000,108000,115000,109000,117000,null,null,null]],["CAA TOHOKU","TOHOKU",[133000,133000,131000,131000,131000,null,null,null,null,null,null,null]],["CAA TOKYO","KANTO",[116000,116000,112500,112500,112500,null,null,126500,null,null,null,null]],["HAA KOBE","KANSAI",[107000,107000,null,null,null,101000,108000,115000,109000,null,null,null]],["HERO","KANTO",[111000,111000,115000,115000,115000,null,null,129000,null,null,null,null]],["HONDA HOKKAIDO","HOKKAIDO",[137000,137000,136000,136000,136000,null,null,null,null,135000,null,null]],["HONDA KANSAI","KANSAI",[107000,107000,null,null,null,101000,108000,115000,109000,null,null,null]],["HONDA KYUSHU","KYUSHU",[129000,129000,null,null,null,124000,131000,null,131500,null,110000,111500]],["HONDA NAGOYA","CHUBU",[103000,103000,127500,127500,127500,108000,115000,107500,115500,null,null,null]],["HONDA SENDAI","TOHOKU",[123000,123000,122000,122000,122000,null,null,null,null,null,null,null]],["HONDA TOKYO","KANTO",[114000,114000,115000,115000,115000,null,null,129000,null,null,null,null]],["I-AUC(ISUZU KOBE)","KANSAI",[107000,107000,null,null,null,111000,118000,125000,119000,null,null,null]],["I-AUC(ISUZU KYUSHU)","KYUSHU",[136000,136000,null,null,null,null,null,null,139000,null,117000,119000]],["I-AUC(ISUZU TOKYO)","KANTO",[141000,141000,126000,126000,126000,null,null,140000,null,null,null,null]],["IAA OSAKA","KANSAI",[107000,107000,null,null,null,101000,108000,114500,108500,null,null,null]],["JAA","KANTO",[115000,115000,111000,111000,111000,null,null,125000,null,null,null,null]],["JU AICHI","CHUBU",[103000,103000,127500,127500,127500,108000,115000,107500,115500,null,null,null]],["JU AOMORI","TOHOKU",[137000,137000,138000,138000,138000,null,null,null,null,null,null,null]],["JU CHIBA","KANTO",[116000,116000,111000,111000,111000,null,null,125000,null,null,null,null]],["JU FUKUI","HOKURIKU",[101000,101000,129000,129000,129000,null,null,117000,122000,null,null,null]],["JU FUKUOKA","KYUSHU",[127000,127000,null,null,null,120000,127000,null,128500,null,106500,108500]],["JU FUKUSHIMA","TOHOKU",[123000,123000,121000,121000,121000,null,null,null,null,null,null,null]],["JU GIFU","CHUBU",[103000,103000,129000,129000,129000,108000,115000,109000,117000,null,null,null]],["JU GUNMA","KANTO",[111000,111000,122000,122000,122000,null,null,136000,null,null,null,null]],["JU HIROSHIMA","CHUGOKU",[124000,124000,null,null,null,116000,123000,null,121000,null,null,null]],["JU IBARAKI","KANTO",[121000,121000,120000,120000,120000,null,null,134000,null,null,null,null]],["JU ISHIKAWA","HOKURIKU",[98000,98000,128000,128000,128000,null,null,116000,121000,null,null,null]],["JU KANAGAWA","KANTO",[121000,121000,123000,123000,123000,null,null,137000,null,null,null,null]],["JU KUMAMOTO","KYUSHU",[137000,137000,null,null,null,131000,138000,null,138000,null,119000,118000]],["JU MIE","CHUBU",[112000,112000,132500,132500,132500,null,null,112500,120500,null,null,null]],["JU MIYAGI","TOHOKU",[123000,123000,122000,122000,122000,null,null,null,null,null,null,null]],["JU MIYAZAKI","KYUSHU",[132000,132000,null,null,null,126000,133000,null,142000,null,124000,122000]],["JU NAGANO","CHUBU",[123000,123000,141000,141000,141000,null,null,121000,null,null,null,null]],["JU NAGASAKI","KYUSHU",[141000,141000,null,null,null,141000,148000,null,146000,null,124000,126000]],["JU NARA","KANSAI",[114000,114000,null,null,null,101000,108000,117000,111000,null,null,null]],["JU NIIGATA","KANTO",[109000,109000,126000,126000,126000,null,null,140000,null,null,null,null]],["JU OITA","KYUSHU",[131000,131000,null,null,null,124000,131000,null,137000,null,120000,117000]],["JU OKINAWA","KYUSHU",[163000,163000,null,null,null,null,null,null,164000,null,139000,144000]],["JU SAITAMA","KANTO",[113000,113000,115000,115000,115000,null,null,129000,null,null,null,null]],["JU SAPPORO","HOKKAIDO",[137000,137000,136000,136000,136000,null,null,null,null,133000,null,null]],["JU SHIMANE","KANSAI",[131000,131000,null,null,null,125000,132000,137000,131000,null,null,null]],["JU SHIZUOKA","CHUBU",[116000,116000,136000,136000,136000,null,null,116000,124000,null,null,null]],["JU TOCHIGI","KANTO",[120000,120000,122000,122000,122000,null,null,136000,null,null,null,null]],["JU TOKYO","KANTO",[114000,114000,112500,112500,112500,null,null,126500,null,null,null,null]],["JU TOYAMA","HOKURIKU",[92000,92000,128000,128000,128000,null,null,116000,121000,null,null,null]],["JU YAMAGATA","TOHOKU",[133000,133000,124000,124000,124000,null,null,null,null,null,null,null]],["JU YAMAGUCHI","KYUSHU",[127000,127000,null,null,null,null,null,null,131500,null,114000,111500]],["JU YAMANASHI","KANTO",[129000,129000,129000,129000,129000,null,null,143000,null,null,null,null]],["KCAA FUKUOKA","KYUSHU",[127000,127000,null,null,null,120000,127000,null,128500,null,106500,108500]],["KCAA KYOTO","KANSAI",[114000,114000,null,null,null,101000,108000,123000,117000,null,null,null]],["KCAA YAMAGUCHI","KYUSHU",[127000,127000,null,null,null,120000,127000,null,131500,null,114000,111500]],["LAA OKAYAMA","CHUGOKU",[116000,116000,null,null,null,110000,117000,null,114500,null,null,null]],["LAA SHIKOKU","SHIKOKU",[119000,119000,null,null,null,113000,120000,null,118000,null,null,null]],["LUM FUKUOKA","KYUSHU",[128000,128000,null,null,null,120000,127000,null,129500,null,106500,109500]],["LUM KOBE","KANSAI",[107000,107000,null,null,null,102500,109500,117000,111000,null,null,null]],["LUM NAGOYA","CHUBU",[104500,104500,128500,128500,128500,null,null,108500,116500,null,null,null]],["LUM SAPPORO","HOKKAIDO",[137000,137000,137000,137000,137000,null,null,null,null,135000,null,null]],["LUM TOKYO","KANTO",[118000,118000,120500,120500,120500,null,null,134500,null,null,null,null]],["MIRIVE AICHI","CHUBU",[103000,103000,127500,127500,127500,108000,115000,107500,115500,null,null,null]],["MIRIVE OSAKA","KANSAI",[107000,107000,null,null,null,101000,108000,114500,108500,null,null,null]],["MIRIVE SAITAMA","KANTO",[112000,112000,116000,116000,116000,null,null,130000,null,null,null,null]],["NAA FUKUOKA","KYUSHU",[127000,127000,null,null,null,120000,127000,null,128500,null,106500,108500]],["NAA NAGOYA","CHUBU",[103000,103000,128500,128500,128500,108000,115000,108500,116500,null,null,null]],["NAA OSAKA","KANSAI",[107000,107000,null,null,null,101000,108000,114500,108500,null,null,null]],["NAA TOKYO","KANTO",[117000,117000,112000,112000,112000,null,null,126000,null,null,null,null]],["NOAA","KANSAI",[107000,107000,null,null,null,101000,108000,114000,108000,null,null,null]],["NPS FUKUOKA","KYUSHU",[127000,127000,null,null,null,120000,127000,null,128500,null,106500,108500]],["NPS OSAKA","KANSAI",[107000,107000,null,null,null,101000,108000,114500,108500,null,null,null]],["NPS SENDAI","TOHOKU",[123000,123000,122000,122000,122000,null,null,null,null,null,null,null]],["NPS TOCHIGI","KANTO",[124000,124000,122000,122000,122000,null,null,136000,null,null,null,null]],["NPS TOKYO","KANTO",[130000,130000,111500,111500,111500,null,null,125500,null,null,null,null]],["NPS TOMAKOMAI","HOKKAIDO",[137000,137000,133000,133000,133000,null,null,null,null,136000,null,null]],["ORIX ATSUGI","KANTO",[121000,121000,118000,118000,118000,null,null,132000,null,null,null,null]],["ORIX FUKUOKA","KYUSHU",[127000,127000,null,null,118000,120000,127000,null,128500,null,106500,108500]],["ORIX KOBE","KANSAI",[107000,107000,null,null,null,101000,108000,115000,109000,null,null,null]],["ORIX SENDAI","TOHOKU",[123000,123000,122000,122000,122000,null,null,null,null,null,null,null]],["SAA HAMAMATSU","CHUBU",[115000,115000,134000,134000,134000,null,null,114000,122000,null,null,null]],["SAA SAPPORO","HOKKAIDO",[137000,137000,136000,136000,136000,null,null,null,null,133000,null,null]],["TAA CHUBU","CHUBU",[103000,103000,128000,128000,128000,108000,115000,108000,116000,null,null,null]],["TAA HIROSHIMA","CHUGOKU",[120000,120000,null,null,null,114000,121000,null,118000,null,null,null]],["TAA HOKKAIDO","HOKKAIDO",[137000,137000,136000,136000,136000,null,null,null,null,135000,null,null]],["TAA HYOGO","KANSAI",[107000,107000,null,null,null,101000,108000,115000,109000,null,null,null]],["TAA KANTO","KANTO",[116000,116000,111000,111000,111000,null,null,125000,null,null,null,null]],["TAA KINKI","KANSAI",[107000,107000,null,null,null,101000,108000,114500,108500,null,null,null]],["TAA KYUSHU","KYUSHU",[127000,127000,null,null,null,120000,127000,null,129000,null,106500,109000]],["TAA MINAMIKYUSHU","KYUSHU",[132000,132000,null,null,null,126000,133000,null,141000,null,120000,121000]],["TAA SHIKOKU","SHIKOKU",[119000,119000,null,null,null,113000,120000,null,118000,null,null,null]],["TAA TOHOKU","TOHOKU",[123000,123000,121000,121000,121000,null,null,null,null,null,null,null]],["TAA YOKOHAMA","KANTO",[116000,116000,111000,111000,111000,null,null,125000,null,null,null,null]],["USS FUKUOKA","KYUSHU",[127000,127000,null,null,null,120000,127000,null,129000,null,106500,109000]],["USS GUNMA","KANTO",[111000,111000,122000,122000,122000,null,null,136000,null,null,null,null]],["USS HOKURIKU","HOKURIKU",[98000,98000,128000,128000,128000,null,null,116000,121000,null,null,null]],["USS KOBE","KANSAI",[107000,107000,null,null,null,101000,108000,115000,109000,null,null,null]],["USS KYUSHU","KYUSHU",[127000,127000,null,null,null,120000,127000,null,129000,null,106500,109000]],["USS NAGOYA","CHUBU",[103000,103000,127500,127500,127500,108000,115000,107500,115500,null,null,null]],["USS NIIGATA","KANTO",[109000,109000,126000,126000,126000,null,null,140000,null,null,null,null]],["USS OKAYAMA","CHUGOKU",[116000,116000,null,null,null,110000,117000,null,114500,null,null,null]],["USS OSAKA","KANSAI",[107000,107000,null,null,null,101000,108000,114500,108500,null,null,null]],["USS R NAGOYA","CHUBU",[103000,103000,127500,127500,127500,108000,115000,107500,115500,null,null,null]],["USS SAITAMA","KANTO",[113000,113000,116000,116000,116000,null,null,130000,null,null,null,null]],["USS SAPPORO","HOKKAIDO",[137000,137000,136000,136000,136000,null,null,null,null,133000,null,null]],["USS SHIZUOKA","CHUBU",[115000,115000,135000,135000,135000,null,null,115000,123000,null,null,null]],["USS TOHOKU","TOHOKU",[123000,123000,122000,122000,122000,null,null,null,null,null,null,null]],["USS TOKYO","KANTO",[113000,113000,112000,112000,112000,null,null,126000,null,null,null,null]],["USS YOKOHAMA","KANTO",[116000,116000,111000,111000,111000,null,null,125000,null,null,null,null]],["ZERO CHIBA","KANTO",[118000,118000,111000,111000,111000,null,null,125000,null,null,null,null]],["ZERO HAKATA","KYUSHU",[128000,128000,null,null,null,120000,127000,null,129500,null,106500,109500]],["ZERO HOKKAIDO","HOKKAIDO",[137000,137000,137000,137000,137000,null,null,null,null,137000,null,null]],["ZERO OSAKA","KANSAI",[107000,107000,null,null,null,102000,109000,115000,109000,null,null,null]],["ZERO SENDAI","TOHOKU",[124000,124000,122000,122000,122000,null,null,null,null,null,null,null]],["ZERO SYONAN","KANTO",[121000,121000,118000,118000,118000,null,null,132000,null,null,null,null]],["ZIP OSAKA","KANSAI",[108000,108000,null,null,null,102000,109000,116000,110000,null,null,null]],["ZIP TOKYO","KANTO",[117000,117000,112000,112000,112000,null,null,126000,null,null,null,null]]],"priceBands":[[1001000,1500000,0,"1 001 000 – 1 500 000 ¥"],[1501000,2000000,10000,"1 501 000 – 2 000 000 ¥"],[2001000,2500000,30000,"2 001 000 – 2 500 000 ¥"],[2501000,3000000,40000,"2 501 000 – 3 000 000 ¥"],[3001000,3500000,50000,"3 001 000 – 3 500 000 ¥"],[3501000,4000000,60000,"3 501 000 – 4 000 000 ¥"],[4001000,4500000,70000,"4 001 000 – 4 500 000 ¥"],[4501000,5000000,85000,"4 501 000 – 5 000 000 ¥"],[5001000,5500000,100000,"5 001 000 – 5 500 000 ¥"]],"parking":{"phenix_otaru":{"note":"PHENIX ASIA · Отару: 0–30 дн. бесплатно, 31–60 — 200 ¥/дн., 61–180 — 500 ¥/дн.","seg":[[1,30,0,"JPY"],[31,60,200,"JPY"],[61,180,500,"JPY"]]},"phenix_maizuru_toyama":{"note":"PHENIX ASIA · Майдзуру/Тояма: акция — 4 месяца (120 дн.) бесплатно, 121–150 — 200 ¥/дн., 151–180 — 500 ¥/дн.","seg":[[1,120,0,"JPY"],[121,150,200,"JPY"],[151,180,500,"JPY"]]},"phenix_kisarazu":{"note":"PHENIX ASIA · Кисарадзу/Нагоя/Симоноджи: 0–30 дн. бесплатно, 31–180 — 330 ¥/дн., 181–365 — 600 ¥/дн., 366+ — 900 ¥/дн.","seg":[[1,30,0,"JPY"],[31,180,330,"JPY"],[181,365,600,"JPY"],[366,3650,900,"JPY"]]},"mirai_osaka":{"note":"MIRAI-LINE · Осака: 0–30 дн. бесплатно, далее 5 $/дн.","seg":[[1,30,0,"JPY"],[31,3650,5,"USD"]]},"mirai_yokohama":{"note":"MIRAI-LINE · Йокогама: 0–30 дн. бесплатно, далее 6 $/дн.","seg":[[1,30,0,"JPY"],[31,3650,6,"USD"]]},"mirai_toyama":{"note":"MIRAI-LINE · Тояма: акция — 4 месяца (120 дн.) бесплатно, 121–180 — 300 ¥/дн.","seg":[[1,120,0,"JPY"],[121,180,300,"JPY"]]},"mw":{"note":"MW-LINE · Майдзуру/Имари: акция — 4 месяца (120 дн.) бесплатно, 121–180 — 300 ¥/дн.","seg":[[1,120,0,"JPY"],[121,180,300,"JPY"]]}},"loyalty":{"none":null,"bronze":{"name":"BRONZE · 2–9 авто/мес","cash":5000,"bplus":0},"silver":{"name":"SILVER · 10–24 авто/мес","cash":7000,"bplus":5000},"gold":{"name":"GOLD · 25–49 авто/мес","cash":10000,"bplus":5000},"platinum":{"name":"PLATINUM · 50+ авто/мес","cash":10000,"bplus":5000}},"ranks":[{"rank":"5 (новый клиент)","limit":1000000,"dep":100000},{"rank":"4","limit":2000000,"dep":100000},{"rank":"3","limit":3000000,"dep":200000},{"rank":"2","limit":5000000,"dep":300000},{"rank":"1","limit":7000000,"dep":500000}],"extraDeposit":[[1000000,1999000,100000],[2000000,2999000,200000],[3000000,3999000,300000],[4000000,5400000,500000]]};
+
+const fmt = n => Math.round(n).toLocaleString('ru-RU').replace(/,/g,' ');
+const $ = id => document.getElementById(id);
+
+/* ===== Растаможка · ставки по сетке calcus.ru/rastamozhka-auto ===== */
+const CUSTOMS = {
+  /* Физлицо, авто младше 3 лет — ЕТС: [maxСтоимость€, %, min €/см³] */
+  ets3:[[8500,.54,2.5],[16700,.48,3.5],[42300,.48,5.5],[84500,.48,7.5],[169000,.48,15],[Infinity,.48,20]],
+  /* Физлицо, авто 3+ лет — €/см³ по объёму: [maxСм³, 3-5, 5-7, >7] */
+  etsOld:[[1000,1.5,3.0,3.0],[1500,1.7,3.2,3.2],[1800,2.5,3.5,3.5],[2300,2.7,4.8,4.8],[3000,3.0,5.0,5.0],[Infinity,3.6,5.7,5.7]],
+  /* Юрлицо, бензин: [maxСм³, {u3:%, olderMin €/см³, spec>7 €/см³}] */
+  legalPetrol:[[1000,{u3:.15,min:.36,spec:1.4}],[1500,{u3:.15,min:.40,spec:1.5}],[1800,{u3:.15,min:.36,spec:1.6}],[2300,{u3:.15,min:.44,spec:2.2}],[2800,{u3:.15,min:.44,spec:2.2}],[3000,{u3:.15,min:.44,spec:2.2}],[Infinity,{u3:.125,min:.80,spec:3.2}]],
+  /* Юрлицо, дизель */
+  legalDiesel:[[1500,{u3:.15,min:.32,spec:1.5}],[2500,{u3:.15,min:.40,spec:2.2}],[Infinity,{u3:.15,min:.80,spec:3.2}]],
+  /* Таможенный сбор за оформление: [maxСтоимость₽, ₽] */
+  fee:[[200000,1231],[450000,2462],[1200000,4924],[2700000,13541],[4200000,18465],[5500000,21344],[10000000,49240],[Infinity,73860]],
+  /* Акциз (юрлицо), ₽/л.с.: [maxЛ.с., ставка] */
+  excise:[[90,0],[150,64],[200,613],[300,1004],[400,1711],[500,1771],[Infinity,1829]],
+  /* === Утильсбор 2026: коэффициент × базовая ставка 20 000 ₽ === */
+  utilBase:20000,
+  /* Полные сетки утиля 2026 (первоисточник Auto Premium Group, сверено с calcus).
+     Формат [maxЛ.с., коэф.<3 лет, коэф.≥3 лет]. Строка ≤160 л.с. (для EV ≤80) — коммерческая ставка
+     (юрлицо/перепродажа, и любой ДВС >3.0 л). Личная льгота 3400/5200 — отдельно в коде.
+     Строки >160 л.с. одинаковы для физлица и юрлица. */
+  utilEV:[[80,40.04,70.44],[100,49.56,82.08],[130,65.88,95.64],[160,78.00,111.36],[190,92.40,129.72],[220,109.68,151.20],[250,129.96,176.16],[280,153.96,205.20],[Infinity,182.40,239.04]],
+  utilV12:[[160,40.04,70.44],[190,45.00,74.64],[220,47.64,79.20],[250,50.52,83.88],[280,57.12,91.92],[310,64.56,100.56],[340,72.96,110.16],[370,83.16,120.60],[400,94.80,132.00],[430,108.00,144.60],[460,123.24,158.40],[500,140.40,173.40],[Infinity,160.08,189.84]],
+  utilV23:[[160,112.52,170.36],[190,115.34,172.80],[220,118.20,175.08],[250,120.12,177.60],[280,126.00,183.00],[310,131.04,188.52],[340,136.32,193.68],[370,141.72,199.08],[400,147.48,204.72],[430,153.36,210.48],[460,159.48,216.36],[500,165.84,222.36],[Infinity,172.44,228.60]],
+  utilV3035:[[160,129.20,197.81],[190,131.76,200.04],[220,134.40,202.20],[250,137.16,204.36],[280,140.52,207.24],[310,144.00,212.40],[340,151.92,217.80],[370,160.32,224.28],[400,169.20,231.00],[430,178.44,237.96],[460,188.28,245.04],[500,198.60,252.48],[Infinity,209.52,260.04]],
+  utilV35:[[160,164.53,216.29],[190,167.28,219.48],[220,170.16,222.84],[250,173.04,226.20],[280,176.52,231.36],[310,180.00,236.64],[340,186.36,249.60],[370,192.88,263.40],[400,199.68,277.92],[430,206.64,293.16],[460,213.84,309.36],[500,221.28,326.40],[Infinity,229.08,344.28]],
+  utilLgot:{u3:3400, old:5200} // льготный: личное пользование, EV ≤80 л.с. или ДВС ≤160 л.с. и ≤3000 см³
+};
+const pick = (table,x) => { for(const r of table){ if(x<=r[0]) return r; } return table[table.length-1]; };
+
+/* Кривая коэффициентов утиля ДВС/паралл.гибрида по объёму (см³) */
+function utilVolCurve(vol){
+  if(vol<=2000) return CUSTOMS.utilV12; // ≤1.0 л (кей-кары) считаем как 1.0–2.0
+  if(vol<=3000) return CUSTOMS.utilV23;
+  if(vol<=3500) return CUSTOMS.utilV3035;
+  return CUSTOMS.utilV35;
+}
+
+function customs(o){
+  const vol=o.vol, hp=o.power, cval=o.cval, eur=o.eurRate||0;
+  const cvalEur = eur>0 ? cval/eur : 0;
+  const old3plus = o.age!=='u3';
+  const electric = o.fuel==='electro';
+  let duty=0, dutyNote='';
+  if(electric){
+    duty=cval*0.15; dutyNote='электро — 15 % стоимости';
+  } else if(o.owner!=='company'){ // физлицо: личное пользование или перепродажа — ставки ЕТС
+    if(o.age==='u3'){
+      const b=pick(CUSTOMS.ets3, cvalEur);
+      const eEur=Math.max(cvalEur*b[1], b[2]*vol);
+      duty=eEur*eur;
+      dutyNote=`ЕТС: max(${Math.round(b[1]*100)} % стоимости; ${b[2]} €/см³) = ${fmt(eEur)} € × ${eur}`;
+    } else {
+      const b=pick(CUSTOMS.etsOld, vol);
+      const rate = o.age==='a35'?b[1]:o.age==='a57'?b[2]:b[3];
+      duty=rate*vol*eur;
+      dutyNote=`ЕТС: ${rate} €/см³ × ${fmt(vol)} см³ × ${eur}`;
+    }
+  } else { // юрлицо
+    const tbl = o.fuel==='diesel'?CUSTOMS.legalDiesel:CUSTOMS.legalPetrol;
+    const b=pick(tbl,vol)[1];
+    if(o.age==='u3'){ duty=cval*b.u3; dutyNote=`${Math.round(b.u3*100)} % стоимости`; }
+    else if(o.age==='a7'){ duty=b.spec*vol*eur; dutyNote=`${b.spec} €/см³ × ${fmt(vol)} см³ × ${eur}`; }
+    else { duty=Math.max(cval*0.20, b.min*vol*eur); dutyNote=`max(20 % стоимости; ${b.min} €/см³)`; }
+  }
+  // Акциз и НДС: для ДВС/гибрида — только юрлица; для электро — и физлица, и юрлица
+  const taxable = electric || o.owner==='company';
+  const excise = taxable ? pick(CUSTOMS.excise,hp)[1]*hp : 0;
+  const vat = taxable ? (cval+duty+excise)*0.20 : 0; // 20 % от (стоимость + пошлина + акциз)
+  let util, utilNote;
+  const B = CUSTOMS.utilBase;
+  const evGroup = electric || o.fuel==='hyb_ser'; // электро и последовательный гибрид — по мощности
+  // Льгота 3 400/5 200 ₽ — только физлицо для личного пользования
+  const lgot = o.owner==='person' && (evGroup ? hp<=80 : (hp<=160 && vol<=3000));
+  if(lgot){
+    util = old3plus?CUSTOMS.utilLgot.old:CUSTOMS.utilLgot.u3;
+    utilNote='льготный · личное пользование';
+  } else {
+    const curve = evGroup ? CUSTOMS.utilEV : utilVolCurve(vol);
+    const b = pick(curve, hp);
+    const coef = old3plus?b[2]:b[1];
+    util = B*coef;
+    const what = evGroup ? 'электро/послед.гибрид' : `объём ${fmt(vol)} см³`;
+    utilNote=`коэф. ${coef} × ${fmt(B)} ₽ · ${what}, ${hp} л.с.`;
+  }
+  const fee = pick(CUSTOMS.fee, cval)[1];
+  const total = duty+excise+vat+util+fee;
+  return {duty,dutyNote,excise,vat,util,utilNote,fee,total,cvalEur,taxable};
+}
+
+/* ===== сохранение курса и сумм в браузере ===== */
+const STORE='autocalc_rf_v1';
+const PERSIST=['jpyRate','eurRate','broker','extra','margin'];
+function saveState(){ try{ const s={}; PERSIST.forEach(id=>s[id]=$(id).value); localStorage.setItem(STORE, JSON.stringify(s)); }catch(e){} }
+function loadState(){ try{ const s=JSON.parse(localStorage.getItem(STORE)||'{}'); PERSIST.forEach(id=>{ if($(id)&&s[id]!=null&&s[id]!=='') $(id).value=s[id]; }); }catch(e){} }
+
+/* --- заполнение списка аукционов, сгруппированного по региону --- */
+const regions = {};
+DATA.rows.forEach(function(r,i){ var k=r[1]||'—'; (regions[k]=regions[k]||[]).push(i); });
+const regOrder = ['KANTO','CHUBU','KANSAI','TOHOKU','KYUSHU','HOKKAIDO','HOKURIKU','CHUGOKU','SHIKOKU','—'];
+const aSel = $('auction');
+regOrder.filter(k=>regions[k]).forEach(k=>{
+  const g = document.createElement('optgroup'); g.label = k;
+  regions[k].forEach(i=>{ const o=document.createElement('option'); o.value=i; o.textContent=DATA.rows[i][0]; g.appendChild(o); });
+  aSel.appendChild(g);
+});
+Object.keys(regions).filter(k=>!regOrder.includes(k)).forEach(k=>{
+  const g=document.createElement('optgroup'); g.label=k;
+  regions[k].forEach(i=>{const o=document.createElement('option');o.value=i;o.textContent=DATA.rows[i][0];g.appendChild(o);});
+  aSel.appendChild(g);
+});
+aSel.value = DATA.rows.findIndex(r=>r[0]==='USS TOKYO');
+
+/* --- доплата по стоимости --- */
+function priceSurcharge(p){
+  for(const b of DATA.priceBands){ if(p>=b[0] && p<=b[1]) return {v:b[2], label:b[3]}; }
+  if(p<=1000000) return {v:0,label:'до 1 000 000 ¥'};
+  return {v:null,label:'свыше 5 500 000 ¥ — по запросу'};
+}
+
+/* --- стоянка --- */
+const USD_RATE = 100; // курс тарифной сетки: 1 $ = 100 ¥
+function parking(days, key){
+  const sch = DATA.parking[key];
+  if(!sch) return {v:0, note:'тариф простоя для этой линии не задан — уточнять отдельно'};
+  let total=0, freeTo=0, unknownFrom=null;
+  for(const seg of sch.seg){
+    const from=seg[0], to=seg[1], rate=seg[2], cur=seg[3];
+    if(rate===0){ freeTo=Math.max(freeTo,to); continue; }
+    if(rate===null){ if(days>=from) unknownFrom=from; continue; }
+    const d = Math.max(0, Math.min(days,to) - (from-1));
+    total += d * (cur==='USD' ? rate*USD_RATE : rate);
+  }
+  const last = sch.seg[sch.seg.length-1];
+  if(days>last[1]) unknownFrom = last[1]+1;
+  return {v: total, note: sch.note + (unknownFrom && days>=unknownFrom ? ` · свыше ${unknownFrom-1} дн. тариф не задан` : ''), free: freeTo};
+}
+
+/* --- заполнение портов --- */
+function fillPorts(keepValue){
+  const ai = +aSel.value, row = DATA.rows[ai][2];
+  const pSel = $('port'); const prev = keepValue ? pSel.value : null;
+  pSel.innerHTML='';
+  const avail = [];
+  row.forEach((v,j)=>{ if(v!=null) avail.push(j); });
+  avail.sort((a,b)=>row[a]-row[b]);
+  avail.forEach(j=>{
+    const o=document.createElement('option'); o.value=j;
+    o.textContent = DATA.ports[j].name + ' — ' + fmt(row[j]) + ' ¥';
+    pSel.appendChild(o);
+  });
+  if(prev!=null && avail.includes(+prev)) pSel.value=prev; else pSel.value=avail[0];
+  $('portHint').textContent = avail.length===1
+    ? 'Для этого аукциона доступен только один маршрут.'
+    : `Доступно маршрутов: ${avail.length}. Отсортированы от дешёвого к дорогому.`;
+}
+
+/* --- ядро расчёта --- */
+function costOf(ai, pj, o){
+  const row = DATA.rows[ai][2];
+  const cf = row[pj];
+  if(cf==null) return null;
+  const sur = priceSurcharge(o.price);
+  const park = parking(o.days, DATA.ports[pj].park);
+  const L = DATA.loyalty[o.loyal];
+  const cash = (o.second && L) ? L.cash : 0;
+  const bplus = L ? L.bplus : 0;
+  const total = o.price + cf + (sur.v||0) + o.buytype + o.status + park.v - cash - bplus;
+  return {cf, sur, park, cash, bplus, total};
+}
+
+function render(){
+  const ai=+aSel.value, pj=+$('port').value;
+  const o = {
+    price:+$('price').value||0, days:+$('days').value||0,
+    buytype:+$('buytype').value, status:+$('status').value,
+    loyal:$('loyal').value, second:$('second').checked
+  };
+  const c = costOf(ai,pj,o);
+  const P = DATA.ports[pj];
+  $('routeBadge').textContent = DATA.rows[ai][0] + ' → ' + P.name;
+
+  const jpyRate = +$('jpyRate').value||0;
+  const jpExtra = +$('jpExtra').value||0;
+  const japanTotal = c.total + jpExtra;      // итог до Владивостока в ¥ (с доп. расходами по Японии)
+  const japanRub = japanTotal*jpyRate;
+
+  const lines = [
+    ['Цена на аукционе', o.price, ''],
+    ['C&F: доставка до порта + фрахт до Владивостока', c.cf, P.name],
+    ['Доплата по стоимости автомобиля', c.sur.v, c.sur.label],
+    ['Способ покупки', o.buytype, o.buytype===10000?'покупка по переговорам':o.buytype===15000?'One Price':'обычная ставка — доплаты нет'],
+    ['Тариф для индивидуальных покупателей', o.status, o.status?'надбавка для физических лиц':'дилер / юрлицо — надбавки нет'],
+    ['Простой на стоянке', c.park.v, o.days ? `${o.days} дн. · ${c.park.note}` : 'нет'],
+  ];
+  if(c.cash) lines.push(['Кешбэк лояльности', -c.cash, DATA.loyalty[o.loyal].name]);
+  if(c.bplus) lines.push(['Скидка «Бизнес +»', -c.bplus, DATA.loyalty[o.loyal].name]);
+  if(jpExtra) lines.push(['Дополнительные расходы по Японии', jpExtra, 'в иенах']);
+
+  let html='';
+  lines.forEach(([n,v,s])=>{
+    const cls = v===0?'zero':(v<0?'minus':'');
+    const val = (v===null)?'по запросу':(v<0?'−':'')+fmt(Math.abs(v))+' ¥';
+    html += `<tr class="${cls}"><td>${n}${s?`<small>${s}</small>`:''}</td><td class="v">${val}</td></tr>`;
+  });
+  html += `<tr class="total"><td>Итого до Владивостока${jpyRate?`<small>${fmt(japanRub)} ₽ по курсу ${jpyRate} ₽/¥</small>`:''}</td><td class="v">${fmt(japanTotal)} ¥</td></tr>`;
+  $('out').innerHTML = html;
+
+  /* подсказка по цене */
+  const ph = $('priceHint');
+  if(!o.price){ ph.className='hint'; ph.textContent='Введите цену с аукциона — пока в итоге только расходы без стоимости машины.'; }
+  else if(o.price>5500000){ ph.className='hint warn'; ph.textContent='Свыше 5 500 000 ¥ — доплата по стоимости в сетке не задана, уточнять отдельно.'; }
+  else if(o.price<=1000000){ ph.className='hint'; ph.textContent='До 1 000 000 ¥ — доплаты по стоимости нет.'; }
+  else { ph.className='hint'; ph.textContent='Диапазон доплаты: ' + c.sur.label + ' → ' + fmt(c.sur.v) + ' ¥'; }
+
+  /* подсказка по стоянке */
+  const dh=$('daysHint');
+  dh.className='hint';
+  dh.textContent = DATA.parking[P.park] ? DATA.parking[P.park].note : 'Тариф простоя для этой линии не задан.';
+
+  /* депозит */
+  const rank = DATA.ranks.find(r=>o.price<=r.limit) || DATA.ranks[DATA.ranks.length-1];
+  const extra = DATA.extraDeposit.find(e=>o.price>=e[0]&&o.price<=e[1]);
+  $('dep').innerHTML =
+    `<span>Ранг под цену ${fmt(o.price)} ¥:</span> <b>${rank.rank}</b> · <span>лимит закупки</span> <b>${fmt(rank.limit)} ¥</b> · <span>депозит</span> <b>${fmt(rank.dep)} ¥</b><br>`+
+    (extra? `<span>Дополнительный депозит (японские марки, ставка ${fmt(extra[0])}–${fmt(extra[1])} ¥):</span> <b>+${fmt(extra[2])} ¥</b><br>`:'')+
+    `<span>Оплата: 100 % в течение 10 дней после покупки на аукционе. Отказ в первые 30–60 мин (авто до 3 000 000 ¥) — штраф 100 000 ¥.</span>`;
+
+  /* примечания */
+  const notes=[];
+  if(!DATA.parking[P.park] && o.days>0) notes.push('Для линии <b>'+P.name+'</b> тариф простоя не задан — стоянка в расчёт не включена.');
+  if(o.price>5500000) notes.push('Доплата по стоимости для авто дороже 5 500 000 ¥ в сетке не задана — в итог не включена.');
+  if(DATA.rows[ai][0].includes('OKINAWA')) notes.push('JU Okinawa: авто на нестандартной стоянке и ТС без оценки — доставка выставляется по факту.');
+  if(['AUCNET','LAA CHALLENGE'].some(x=>DATA.rows[ai][0].includes(x))) notes.push('На этом аукционе выставляются машины из разных регионов Японии — тариф может отличаться.');
+  if(o.days>0 && ['mirai_osaka','mirai_yokohama'].includes(P.park)) notes.push('Стоянка на этой линии тарифицируется в долларах (5–6 $/дн.); пересчитана по курсу <b>1 $ = 100 ¥</b>, принятому в тарифной сетке.');
+  notes.push('C&F = доставка от аукциона до порта + фрахт до Владивостока. Расходы в РФ (пошлина, утильсбор, оформление) сюда не входят.');
+  $('notes').innerHTML = '<b>Примечания</b><ul><li>'+notes.join('</li><li>')+'</li></ul>';
+
+  /* сравнение портов */
+  const row = DATA.rows[ai][2];
+  const list=[];
+  row.forEach((v,j)=>{ if(v!=null){ const cc=costOf(ai,j,o); list.push({j, cf:v, tot:cc.total}); }});
+  list.sort((a,b)=>a.tot-b.tot);
+  let star=false;
+  $('cmp').innerHTML = list.map(x=>{
+    const d = x.tot - c.total;
+    const noPark = o.days>0 && !DATA.parking[DATA.ports[x.j].park];
+    if(noPark) star=true;
+    return `<tr class="${x.j===pj?'cur':''}"><td>${DATA.ports[x.j].name}${noPark?' *':''}</td><td>${fmt(x.cf)}</td>`+
+           `<td class="d">${d===0?'—':(d>0?'+':'−')+fmt(Math.abs(d))}</td><td>${fmt(x.tot)}</td></tr>`;
+  }).join('');
+  $('cmpNote').innerHTML = 'Итог считается с текущими условиями покупки и стоянки — сортировка по итоговой сумме, а не по одному C&F.'
+    + (star? ' <b>*</b> тариф простоя для этой линии не задан, стоянка не учтена — итог занижен.' : '');
+
+  /* ===== растаможка ===== */
+  const cvalInput = $('cval').value;
+  const cval = cvalInput!=='' ? (+cvalInput||0) : Math.round(japanRub);
+  const co = {
+    owner:$('owner').value, age:$('age').value, fuel:$('fuel').value,
+    vol:+$('vol').value||0, power:+$('power').value||0,
+    cval, eurRate:+$('eurRate').value||0
+  };
+  const cu = customs(co);
+  $('custBadge').textContent = co.owner==='person' ? 'физлицо · личное' : co.owner==='resale' ? 'физлицо · перепродажа' : 'юрлицо';
+  $('cvalHint').textContent = cvalInput!=='' ? 'Задано вручную.' : `Подставлен итог по Японии: ${fmt(cval)} ₽.`;
+
+  const rub = v => (v<0?'−':'')+fmt(Math.abs(v))+' ₽';
+  const custLines = [['Таможенная пошлина', cu.duty, cu.dutyNote]];
+  if(cu.taxable) custLines.push(['Акциз', cu.excise, (cu.excise?'по мощности '+co.power+' л.с.':'до 90 л.с. — 0')+(co.fuel==='electro'&&co.owner==='person'?' · электро, платит физлицо':'')]);
+  if(cu.taxable) custLines.push(['НДС 20 %', cu.vat, '(стоимость + пошлина + акциз)'+(co.fuel==='electro'&&co.owner==='person'?' · электро, платит физлицо':'')]);
+  custLines.push(['Утилизационный сбор', cu.util, cu.utilNote]);
+  custLines.push(['Таможенный сбор за оформление', cu.fee, `таможенная стоимость ${fmt(cval)} ₽`]);
+  let ch='';
+  custLines.forEach(([n,v,s])=>{
+    const cls = v===0?'zero':'';
+    ch += `<tr class="${cls}"><td>${n}${s?`<small>${s}</small>`:''}</td><td class="v">${rub(v)}</td></tr>`;
+  });
+  ch += `<tr class="total"><td>Итого растаможка</td><td class="v">${rub(cu.total)}</td></tr>`;
+  $('custOut').innerHTML = ch;
+  $('custNote').innerHTML = 'Пошлина — по сетке calcus.ru. Утильсбор 2026 — полная сетка Auto Premium Group (коэффициент × 20 000 ₽ по объёму и мощности), сверено с calcus. Льгота 3 400/5 200 ₽ — личное пользование: EV ≤ 80 л.с.; ДВС ≤ 160 л.с. и ≤ 3000 см³. Свыше 3.0 л и для юрлиц/перепродажи льготы нет.';
+
+  /* ===== итоговая стоимость автомобиля ===== */
+  const broker=+$('broker').value||0, extraRub=+$('extra').value||0, margin=+$('margin').value||0, deposit=+$('deposit').value||0;
+  const grand = japanRub + cu.total + broker + extraRub + margin - deposit;
+  const fin=[];
+  fin.push(['Стоимость автомобиля (до Владивостока)', rub(japanRub), `${fmt(japanTotal)} ¥ × ${jpyRate||'—'} ₽/¥`]);
+  fin.push(['Курс', `${jpyRate||'—'} ₽/¥`, `для пошлины € → ₽: ${co.eurRate||'—'}`]);
+  fin.push(['Растаможка', rub(cu.total), 'пошлина + утильсбор + сбор' + (co.owner==='company'?' + акциз + НДС':'')]);
+  fin.push(['Брокерские расходы', rub(broker), '']);
+  if(extraRub>0) fin.push(['Дополнительные расходы по России', rub(extraRub), '']);
+  fin.push(['Маржа', rub(margin), margin?'прибавляется к итогу':'не задана']);
+  if(deposit>0) fin.push(['Депозит (предоплата)', '−'+fmt(deposit)+' ₽', 'вычитается из итога']);
+  let fh='';
+  fin.forEach(([n,v,s])=>{
+    fh += `<tr><td>${n}${s?`<small>${s}</small>`:''}</td><td class="v">${v}</td></tr>`;
+  });
+  fh += `<tr class="total"><td>Итого, ₽</td><td class="v">${rub(grand)}</td></tr>`;
+  $('finalOut').innerHTML = fh;
+
+  LAST = {
+    route: DATA.rows[ai][0] + ' → ' + P.name,
+    auction: DATA.rows[ai][0], port: P.name,
+    carModel: $('carModel').value.trim(), carYear: $('carYear').value.trim(),
+    carGrade: $('carGrade').value.trim(), carMileage: $('carMileage').value.trim(), carLot: $('carLot').value.trim(),
+    priceYen: o.price, carYen: japanTotal, jpExtra, carRub: japanRub, jpyRate,
+    owner: co.owner, age: co.age, fuel: co.fuel, vol: co.vol, power: co.power,
+    cval, duty: cu.duty, excise: cu.excise, vat: cu.vat, util: cu.util, fee: cu.fee,
+    customs: cu.total, taxable: cu.taxable,
+    broker, extra: extraRub, margin, deposit, services: broker+extraRub+margin, grand
+  };
+
+  saveState();
+}
+let LAST = null;
+
+/* ===== Клиентский PDF (печать → «Сохранить как PDF») ===== */
+const AGE_RU = {u3:'до 3 лет', a35:'3–5 лет', a57:'5–7 лет', a7:'старше 7 лет'};
+const FUEL_RU = {petrol:'бензин', diesel:'дизель', hyb_par:'параллельный гибрид', hyb_ser:'последовательный гибрид', electro:'электро'};
+const OWNER_RU = {person:'физлицо (личное пользование)', resale:'физлицо (перепродажа)', company:'юридическое лицо'};
+function buildClientPdf(){
+  if(!LAST){ return; }
+  const L = LAST;
+  const r = v => (v<0?'−':'')+fmt(Math.abs(v))+' ₽';
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2,'0')+'.'+String(now.getMonth()+1).padStart(2,'0')+'.'+now.getFullYear();
+  // подстроки растаможки
+  const custRows = [];
+  custRows.push(['Таможенная пошлина', L.duty]);
+  if(L.taxable && L.excise>0) custRows.push(['Акциз', L.excise]);
+  if(L.taxable && L.vat>0) custRows.push(['НДС 20 %', L.vat]);
+  custRows.push(['Утилизационный сбор', L.util]);
+  custRows.push(['Таможенный сбор за оформление', L.fee]);
+  const subRows = custRows.map(([n,v])=>`<tr class="sub"><td>${n}</td><td class="v">${r(v)}</td></tr>`).join('');
+  const specs = `${FUEL_RU[L.fuel]||L.fuel}, ${fmt(L.vol)} см³, ${L.power} л.с., ${AGE_RU[L.age]||L.age}`;
+  const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const carRows = [];
+  if(L.carModel) carRows.push(['Марка и модель', esc(L.carModel)]);
+  if(L.carYear) carRows.push(['Год выпуска', esc(L.carYear)]);
+  if(L.carGrade) carRows.push(['Оценка', esc(L.carGrade)]);
+  if(L.carMileage) carRows.push(['Пробег', esc(L.carMileage)+(/км/i.test(L.carMileage)?'':' км')]);
+  if(L.carLot) carRows.push(['№ лота', esc(L.carLot)]);
+  const carBox = carRows.length ? `<div class="carbox"><table>${carRows.map(([k,v])=>`<tr><td class="lbl">${k}</td><td>${v}</td></tr>`).join('')}</table></div>` : '';
+  const depositRow = L.deposit>0 ? `<tr class="dep"><td>Предоплата (депозит)</td><td class="v">−${fmt(L.deposit)} ₽</td></tr>` : '';
+
+  const inner = `
+  <h1>Расчёт стоимости автомобиля</h1>
+  ${carBox}
+  <p class="sub" style="margin-top:14px">Авто из Японии · ${L.auction} → Владивосток · ${specs}</p>
+  <p class="sub">Дата расчёта: ${dd} · курс ${L.jpyRate||'—'} ₽/¥</p>
+  <div class="box">
+    <h2>Расходы</h2>
+    <table>
+      <tr class="head"><td>Стоимость автомобиля до Владивостока</td><td class="v">${r(L.carRub)}</td></tr>
+      <tr class="sub"><td>цена на аукционе + доставка до порта + фрахт (${fmt(L.carYen)} ¥)</td><td class="v"></td></tr>
+      <tr class="head"><td>Таможенные платежи (РФ)</td><td class="v">${r(L.customs)}</td></tr>
+      ${subRows}
+      <tr class="head"><td>Услуги компании и сопровождение</td><td class="v">${r(L.services)}</td></tr>
+      <tr class="sub"><td>брокер, оформление, доставка документов, сопровождение сделки</td><td class="v"></td></tr>
+      ${depositRow}
+      <tr class="grand"><td>Итого</td><td class="v">${r(L.grand)}</td></tr>
+    </table>
+  </div>
+  <div class="note">Расчёт предварительный и носит информационный характер, не является публичной офертой. Итоговая сумма зависит от курса валют на дату оплаты, фактических тарифов линий и изменений законодательства РФ. Таможенные платежи рассчитаны по ставкам 2026 года.</div>`;
+
+  let area = document.getElementById('pdfArea');
+  if(!area){ area = document.createElement('div'); area.id = 'pdfArea'; document.body.appendChild(area); }
+  area.innerHTML = inner;
+  // печать: на iOS откроется меню «Поделиться» → «Сохранить в Файлы» (PDF), на десктопе — диалог печати → «Сохранить как PDF»
+  setTimeout(()=>window.print(), 60);
+}
+
+aSel.addEventListener('change', ()=>{ fillPorts(false); render(); });
+['port','price','buytype','status','loyal','second','days',
+ 'owner','age','fuel','vol','power','cval','jpyRate','eurRate','broker','jpExtra','extra','margin','deposit',
+ 'carModel','carYear','carGrade','carMileage','carLot']
+  .forEach(id=>$(id).addEventListener('input', render));
+$('pdfBtn').addEventListener('click', buildClientPdf);
+loadState();
+fillPorts(false); render();
+</script>
+</body>
+</html>
