@@ -131,36 +131,59 @@ table.cmp td.d{color:var(--muted);font-size:12.5px}
   #pdfArea{display:block !important;padding:0}
   @page{margin:14mm}
 }
+/* вкладки режимов */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 20px}
+.tab{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--muted);
+  font:600 14px/1 inherit;font-family:inherit;padding:11px 16px;border-radius:9px;cursor:pointer;letter-spacing:.01em}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.tab:disabled{opacity:.5;cursor:not-allowed}
+.tab .soon{font-size:10px;font-weight:600;text-transform:uppercase;opacity:.7;margin-left:4px}
+/* показ/скрытие блоков по режиму */
+.sanction-only{display:none}
+body[data-mode="sanction"] .sanction-only{display:block}
+body[data-mode="sanction"] .japan-only{display:none}
+.cfbox{background:var(--accent-soft);border:1px solid #e6d7c4;border-radius:8px;padding:10px 12px;font-size:13px;color:#6b4d16;line-height:1.5}
+.cfbox b{color:var(--accent)}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
-  <h1>Расходы на автомобиль из Японии</h1>
-  <p class="sub">Базис <b>C&amp;F Владивосток (RO-RO)</b> · тарифная сетка от <b>22.05.2026</b></p>
+  <h1 id="mainTitle">Расходы на автомобиль из Японии</h1>
+  <p class="sub" id="mainSub">Базис <b>C&amp;F Владивосток (RO-RO)</b> · тарифная сетка от <b>22.05.2026</b></p>
 </header>
+
+<div class="tabs" id="tabs">
+  <button type="button" class="tab active" data-mode="japan">🇯🇵 Япония (аукцион)</button>
+  <button type="button" class="tab" data-mode="sanction">🚫 Санкционный</button>
+  <button type="button" class="tab" data-mode="korea" disabled>🇰🇷 Корея<span class="soon">скоро</span></button>
+  <button type="button" class="tab" data-mode="china" disabled>🇨🇳 Китай<span class="soon">скоро</span></button>
+</div>
 
 <div class="grid">
   <div>
     <div class="card">
-      <h2>Автомобиль и маршрут</h2>
+      <h2 id="srcTitle">Автомобиль и маршрут</h2>
       <div class="field">
-        <label for="price">Цена на аукционе, ¥</label>
-        <input type="number" id="price" value="" min="0" step="10000" placeholder="0">
+        <label for="price" id="priceLabel">Цена на аукционе, ¥</label>
+        <input type="number" id="price" value="" min="0" step="10000" placeholder="0" inputmode="numeric">
         <div class="hint" id="priceHint"></div>
       </div>
-      <div class="field">
+      <div class="field japan-only">
         <label for="auction">Аукцион</label>
         <select id="auction"></select>
       </div>
-      <div class="field">
+      <div class="field japan-only">
         <label for="port">Порт отправления / линия</label>
         <select id="port"></select>
         <div class="hint" id="portHint"></div>
       </div>
+      <div class="field sanction-only">
+        <div class="cfbox">Фиксированный C&amp;F: расходы по Японии <b>$1 000</b> + фрахт <b>$1 500</b> = <b>$2 500</b>. Переводится в ₽ по курсу доллара и прибавляется к цене авто <b>после</b> её перевода из ¥ в ₽.</div>
+      </div>
     </div>
 
-    <div class="card">
+    <div class="card japan-only">
       <h2>Условия покупки</h2>
       <div class="field">
         <label for="buytype">Способ покупки</label>
@@ -253,6 +276,10 @@ table.cmp td.d{color:var(--muted);font-size:12.5px}
           <label for="eurRate">Курс € → ₽ (ЦБ)</label>
           <input type="number" id="eurRate" value="95" min="0" step="0.1">
         </div>
+      </div>
+      <div class="field sanction-only">
+        <label for="usdRate">Курс $ → ₽ <span style="text-transform:none;font-weight:400;letter-spacing:0">— для санкционного C&amp;F</span></label>
+        <input type="number" id="usdRate" value="82" min="0" step="0.1">
       </div>
       <div class="field">
         <label for="broker">Расходы на брокера, ₽</label>
@@ -348,12 +375,12 @@ table.cmp td.d{color:var(--muted);font-size:12.5px}
       <button type="button" id="pdfBtn" class="pdfbtn">📄 Скачать PDF для клиента</button>
     </div>
 
-    <div class="card">
+    <div class="card japan-only">
       <h2>Депозит и лимит закупки</h2>
       <div class="dep" id="dep"></div>
     </div>
 
-    <div class="card">
+    <div class="card japan-only">
       <h2>Сравнение портов для выбранного аукциона</h2>
       <div class="cmpwrap">
       <table class="cmp">
@@ -379,7 +406,7 @@ const DATA = {"ports":[{"name":"TOYAMA · PHENIX ASIA","park":"phenix_maizuru_to
 const fmt = n => Math.round(n).toLocaleString('ru-RU').replace(/,/g,' ');
 const $ = id => document.getElementById(id);
 
-/* ===== Растаможка · ставки по сетке calcus.ru/rastamozhka-auto ===== */
+/* ===== Растаможка · ставки РФ 2026 ===== */
 const CUSTOMS = {
   /* Физлицо, авто младше 3 лет — ЕТС: [maxСтоимость€, %, min €/см³] */
   ets3:[[8500,.54,2.5],[16700,.48,3.5],[42300,.48,5.5],[84500,.48,7.5],[169000,.48,15],[Infinity,.48,20]],
@@ -395,10 +422,9 @@ const CUSTOMS = {
   excise:[[90,0],[150,64],[200,613],[300,1004],[400,1711],[500,1771],[Infinity,1829]],
   /* === Утильсбор 2026: коэффициент × базовая ставка 20 000 ₽ === */
   utilBase:20000,
-  /* Полные сетки утиля 2026 (первоисточник Auto Premium Group, сверено с calcus).
-     Формат [maxЛ.с., коэф.<3 лет, коэф.≥3 лет]. Строка ≤160 л.с. (для EV ≤80) — коммерческая ставка
-     (юрлицо/перепродажа, и любой ДВС >3.0 л). Личная льгота 3400/5200 — отдельно в коде.
-     Строки >160 л.с. одинаковы для физлица и юрлица. */
+  /* Полные сетки утиля 2026. Формат [maxЛ.с., коэф.<3 лет, коэф.≥3 лет].
+     Строка ≤160 л.с. (для EV ≤80) — коммерческая ставка (юрлицо/перепродажа и любой ДВС >3.0 л).
+     Личная льгота 3400/5200 — отдельно в коде. Строки >160 л.с. одинаковы для физлица и юрлица. */
   utilEV:[[80,40.04,70.44],[100,49.56,82.08],[130,65.88,95.64],[160,78.00,111.36],[190,92.40,129.72],[220,109.68,151.20],[250,129.96,176.16],[280,153.96,205.20],[Infinity,182.40,239.04]],
   utilV12:[[160,40.04,70.44],[190,45.00,74.64],[220,47.64,79.20],[250,50.52,83.88],[280,57.12,91.92],[310,64.56,100.56],[340,72.96,110.16],[370,83.16,120.60],[400,94.80,132.00],[430,108.00,144.60],[460,123.24,158.40],[500,140.40,173.40],[Infinity,160.08,189.84]],
   utilV23:[[160,112.52,170.36],[190,115.34,172.80],[220,118.20,175.08],[250,120.12,177.60],[280,126.00,183.00],[310,131.04,188.52],[340,136.32,193.68],[370,141.72,199.08],[400,147.48,204.72],[430,153.36,210.48],[460,159.48,216.36],[500,165.84,222.36],[Infinity,172.44,228.60]],
@@ -461,7 +487,8 @@ function customs(o){
     const coef = old3plus?b[2]:b[1];
     util = B*coef;
     const what = evGroup ? 'электро/послед.гибрид' : `объём ${fmt(vol)} см³`;
-    utilNote=`коэф. ${coef} × ${fmt(B)} ₽ · ${what}, ${hp} л.с.`;
+    const noLgot = (!evGroup && vol>3000) ? ' (>3.0 л — без льготы)' : '';
+    utilNote=`коммерческий · коэф. ${coef} × ${fmt(B)} ₽ · ${what}, ${hp} л.с.${noLgot}`;
   }
   const fee = pick(CUSTOMS.fee, cval)[1];
   const total = duty+excise+vat+util+fee;
@@ -470,7 +497,7 @@ function customs(o){
 
 /* ===== сохранение курса и сумм в браузере ===== */
 const STORE='autocalc_rf_v1';
-const PERSIST=['jpyRate','eurRate','broker','extra','margin'];
+const PERSIST=['jpyRate','eurRate','usdRate','broker','extra','margin'];
 function saveState(){ try{ const s={}; PERSIST.forEach(id=>s[id]=$(id).value); localStorage.setItem(STORE, JSON.stringify(s)); }catch(e){} }
 function loadState(){ try{ const s=JSON.parse(localStorage.getItem(STORE)||'{}'); PERSIST.forEach(id=>{ if($(id)&&s[id]!=null&&s[id]!=='') $(id).value=s[id]; }); }catch(e){} }
 
@@ -550,20 +577,44 @@ function costOf(ai, pj, o){
 }
 
 function render(){
+  const mode = document.body.dataset.mode || 'japan';
+  const jpyRate = +$('jpyRate').value||0;
+  const jpExtra = +$('jpExtra').value||0;
+  const price = +$('price').value||0;
+  let japanRub, japanTotal, vladSub, routeText, carSub, auctionText='—', portText='—';
+
+  if(mode==='sanction'){
+    const usdRate = +$('usdRate').value||0;
+    japanTotal = price + jpExtra;                 // ¥ по Японии (цена + доп. Япония)
+    const carRub = japanTotal*jpyRate;
+    const cfRub = 2500*usdRate;                   // фикс. C&F $2 500 → ₽
+    japanRub = carRub + cfRub;
+    vladSub = `авто ${fmt(japanTotal)} ¥ × ${jpyRate||'—'} + C&F $2 500 × ${usdRate||'—'}`;
+    routeText = 'Санкционный ввоз · Владивосток';
+    carSub = `цена авто ${fmt(japanTotal)} ¥ → ₽ + C&F $2 500 → ₽ (курс $ ${usdRate||'—'})`;
+    $('routeBadge').textContent = 'санкционный · C&F $2 500';
+    let sh = `<tr><td>Цена авто<small>${fmt(price)} ¥ × ${jpyRate||'—'}</small></td><td class="v">${fmt(price*jpyRate)} ₽</td></tr>`;
+    if(jpExtra) sh += `<tr><td>Доп. расходы по Японии<small>${fmt(jpExtra)} ¥ × ${jpyRate||'—'}</small></td><td class="v">${fmt(jpExtra*jpyRate)} ₽</td></tr>`;
+    sh += `<tr><td>Расходы Япония $1 000 + фрахт $1 500 = C&F $2 500<small>$2 500 × ${usdRate||'—'}</small></td><td class="v">${fmt(cfRub)} ₽</td></tr>`;
+    sh += `<tr class="total"><td>Итого до Владивостока</td><td class="v">${fmt(japanRub)} ₽</td></tr>`;
+    $('out').innerHTML = sh;
+    const ph=$('priceHint'); ph.className='hint'; ph.textContent = price ? '' : 'Введите цену авто в иенах.';
+  } else {
   const ai=+aSel.value, pj=+$('port').value;
   const o = {
-    price:+$('price').value||0, days:+$('days').value||0,
+    price, days:+$('days').value||0,
     buytype:+$('buytype').value, status:+$('status').value,
     loyal:$('loyal').value, second:$('second').checked
   };
   const c = costOf(ai,pj,o);
   const P = DATA.ports[pj];
   $('routeBadge').textContent = DATA.rows[ai][0] + ' → ' + P.name;
-
-  const jpyRate = +$('jpyRate').value||0;
-  const jpExtra = +$('jpExtra').value||0;
-  const japanTotal = c.total + jpExtra;      // итог до Владивостока в ¥ (с доп. расходами по Японии)
-  const japanRub = japanTotal*jpyRate;
+  japanTotal = c.total + jpExtra;      // итог до Владивостока в ¥ (с доп. расходами по Японии)
+  japanRub = japanTotal*jpyRate;
+  vladSub = `${fmt(japanTotal)} ¥ × ${jpyRate||'—'} ₽/¥`;
+  routeText = 'Авто из Японии · ' + DATA.rows[ai][0] + ' → Владивосток';
+  carSub = `цена на аукционе + доставка до порта + фрахт (${fmt(japanTotal)} ¥)`;
+  auctionText = DATA.rows[ai][0]; portText = P.name;
 
   const lines = [
     ['Цена на аукционе', o.price, ''],
@@ -631,6 +682,7 @@ function render(){
   }).join('');
   $('cmpNote').innerHTML = 'Итог считается с текущими условиями покупки и стоянки — сортировка по итоговой сумме, а не по одному C&F.'
     + (star? ' <b>*</b> тариф простоя для этой линии не задан, стоянка не учтена — итог занижен.' : '');
+  }
 
   /* ===== растаможка ===== */
   const cvalInput = $('cval').value;
@@ -657,13 +709,13 @@ function render(){
   });
   ch += `<tr class="total"><td>Итого растаможка</td><td class="v">${rub(cu.total)}</td></tr>`;
   $('custOut').innerHTML = ch;
-  $('custNote').innerHTML = 'Пошлина — по сетке calcus.ru. Утильсбор 2026 — полная сетка Auto Premium Group (коэффициент × 20 000 ₽ по объёму и мощности), сверено с calcus. Льгота 3 400/5 200 ₽ — личное пользование: EV ≤ 80 л.с.; ДВС ≤ 160 л.с. и ≤ 3000 см³. Свыше 3.0 л и для юрлиц/перепродажи льготы нет.';
+  $('custNote').innerHTML = 'Растаможка РФ по ставкам 2026 г. Утильсбор = коэффициент × 20 000 ₽ (по объёму и мощности). Льгота 3 400 / 5 200 ₽ — только физлицо для личного пользования: EV ≤ 80 л.с.; ДВС ≤ 160 л.с. и объём ≤ 3 000 см³. Свыше 3.0 л, а также для юрлиц и перепродажи — коммерческий утильсбор (без льготы).';
 
   /* ===== итоговая стоимость автомобиля ===== */
   const broker=+$('broker').value||0, extraRub=+$('extra').value||0, margin=+$('margin').value||0, deposit=+$('deposit').value||0;
   const grand = japanRub + cu.total + broker + extraRub + margin - deposit;
   const fin=[];
-  fin.push(['Стоимость автомобиля (до Владивостока)', rub(japanRub), `${fmt(japanTotal)} ¥ × ${jpyRate||'—'} ₽/¥`]);
+  fin.push(['Стоимость автомобиля (до Владивостока)', rub(japanRub), vladSub]);
   fin.push(['Курс', `${jpyRate||'—'} ₽/¥`, `для пошлины € → ₽: ${co.eurRate||'—'}`]);
   fin.push(['Растаможка', rub(cu.total), 'пошлина + утильсбор + сбор' + (co.owner==='company'?' + акциз + НДС':'')]);
   fin.push(['Брокерские расходы', rub(broker), '']);
@@ -678,12 +730,11 @@ function render(){
   $('finalOut').innerHTML = fh;
 
   LAST = {
-    route: DATA.rows[ai][0] + ' → ' + P.name,
-    auction: DATA.rows[ai][0], port: P.name,
+    routeText, carSub, auction: auctionText, port: portText,
     clientName: $('clientName').value.trim(), clientCity: $('clientCity').value.trim(), clientPhone: $('clientPhone').value.trim(),
     carModel: $('carModel').value.trim(), carYear: $('carYear').value.trim(),
     carGrade: $('carGrade').value.trim(), carMileage: $('carMileage').value.trim(), carLot: $('carLot').value.trim(),
-    priceYen: o.price, carYen: japanTotal, jpExtra, carRub: japanRub, jpyRate,
+    priceYen: price, carYen: japanTotal, jpExtra, carRub: japanRub, jpyRate,
     owner: co.owner, age: co.age, fuel: co.fuel, vol: co.vol, power: co.power,
     cval, duty: cu.duty, excise: cu.excise, vat: cu.vat, util: cu.util, fee: cu.fee,
     customs: cu.total, taxable: cu.taxable,
@@ -732,13 +783,13 @@ function buildClientPdf(){
   <h1>Расчёт стоимости автомобиля</h1>
   ${clientBox}
   ${carBox}
-  <p class="sub" style="margin-top:14px">Авто из Японии · ${L.auction} → Владивосток · ${specs}</p>
+  <p class="sub" style="margin-top:14px">${L.routeText||'Авто из Японии · Владивосток'} · ${specs}</p>
   <p class="sub">Дата расчёта: ${dd} · курс ${L.jpyRate||'—'} ₽/¥</p>
   <div class="box">
     <h2>Расходы</h2>
     <table>
       <tr class="head"><td>Стоимость автомобиля до Владивостока</td><td class="v">${r(L.carRub)}</td></tr>
-      <tr class="sub"><td>цена на аукционе + доставка до порта + фрахт (${fmt(L.carYen)} ¥)</td><td class="v"></td></tr>
+      <tr class="sub"><td>${L.carSub||('до Владивостока (' + fmt(L.carYen) + ' ¥)')}</td><td class="v"></td></tr>
       <tr class="head"><td>Таможенные платежи (РФ)</td><td class="v">${r(L.customs)}</td></tr>
       ${subRows}
       <tr class="head"><td>Услуги компании и сопровождение</td><td class="v">${r(L.services)}</td></tr>
@@ -758,12 +809,37 @@ function buildClientPdf(){
 
 aSel.addEventListener('change', ()=>{ fillPorts(false); render(); });
 ['port','price','buytype','status','loyal','second','days',
- 'owner','age','fuel','vol','power','cval','jpyRate','eurRate','broker','jpExtra','extra','margin','deposit',
+ 'owner','age','fuel','vol','power','cval','jpyRate','eurRate','usdRate','broker','jpExtra','extra','margin','deposit',
  'carModel','carYear','carGrade','carMileage','carLot','clientName','clientCity','clientPhone']
   .forEach(id=>$(id).addEventListener('input', render));
 $('pdfBtn').addEventListener('click', buildClientPdf);
+
+/* ===== переключение вкладок (режимов) ===== */
+const MODE_TITLES = {
+  japan:    { title:'Расходы на автомобиль из Японии', sub:'Базис <b>C&amp;F Владивосток (RO-RO)</b> · тарифная сетка от <b>22.05.2026</b>', src:'Автомобиль и маршрут', price:'Цена на аукционе, ¥' },
+  sanction: { title:'Санкционный ввоз — расчёт', sub:'Фиксированный <b>C&amp;F $2 500</b> · растаможка РФ (2026)', src:'Автомобиль', price:'Цена авто, ¥' },
+};
+function switchMode(m){
+  if(!MODE_TITLES[m]) return;
+  document.body.dataset.mode = m;
+  document.querySelectorAll('#tabs .tab').forEach(b=>b.classList.toggle('active', b.dataset.mode===m));
+  const t = MODE_TITLES[m];
+  $('mainTitle').textContent = t.title;
+  $('mainSub').innerHTML = t.sub;
+  $('srcTitle').textContent = t.src;
+  $('priceLabel').textContent = t.price;
+  try{ localStorage.setItem('autocalc_mode', m); }catch(e){}
+  render();
+}
+document.querySelectorAll('#tabs .tab').forEach(b=>{
+  if(!b.disabled) b.addEventListener('click', ()=>switchMode(b.dataset.mode));
+});
+
 loadState();
-fillPorts(false); render();
+let startMode = 'japan';
+try{ const sm = localStorage.getItem('autocalc_mode'); if(sm && MODE_TITLES[sm]) startMode = sm; }catch(e){}
+fillPorts(false);
+switchMode(startMode);
 </script>
 </body>
 </html>
