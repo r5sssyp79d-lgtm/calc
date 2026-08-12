@@ -122,6 +122,8 @@ table.cmp td.d{color:var(--muted);font-size:12.5px}
 #pdfArea .carbox table{font-size:13.5px}
 #pdfArea .carbox td{border:0;padding:3px 0;font-weight:400}
 #pdfArea .carbox td.lbl{color:#77736c;width:160px}
+#pdfArea .clientbox{margin-top:12px;padding:10px 16px;border:1px solid #e3e0da;border-radius:10px;background:#faf9f7;font-size:13.5px;line-height:1.55}
+#pdfArea .clientbox .cl-name{font-weight:700;font-size:15px}
 #pdfArea .note{color:#8a7a58;background:#fdf5e6;border:1px solid #f0dfbe;border-radius:8px;padding:11px 13px;font-size:11.5px;margin-top:16px;line-height:1.5}
 @media print{
   html,body{background:#fff}
@@ -270,6 +272,24 @@ table.cmp td.d{color:var(--muted);font-size:12.5px}
         <input type="number" id="margin" value="0" min="0" step="1000">
       </div>
       <div class="hint">Курс и суммы сохраняются в браузере и подставляются при следующем расчёте.</div>
+    </div>
+
+    <div class="card">
+      <h2>Данные клиента <span style="text-transform:none;font-weight:400;letter-spacing:0;color:var(--muted)">— в документ</span></h2>
+      <div class="field">
+        <label for="clientName">ФИО</label>
+        <input type="text" id="clientName" placeholder="Иванов Иван Иванович">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="clientCity">Город</label>
+          <input type="text" id="clientCity" placeholder="Москва">
+        </div>
+        <div class="field">
+          <label for="clientPhone">Номер телефона</label>
+          <input type="text" id="clientPhone" inputmode="tel" placeholder="+7 900 000-00-00">
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -660,6 +680,7 @@ function render(){
   LAST = {
     route: DATA.rows[ai][0] + ' → ' + P.name,
     auction: DATA.rows[ai][0], port: P.name,
+    clientName: $('clientName').value.trim(), clientCity: $('clientCity').value.trim(), clientPhone: $('clientPhone').value.trim(),
     carModel: $('carModel').value.trim(), carYear: $('carYear').value.trim(),
     carGrade: $('carGrade').value.trim(), carMileage: $('carMileage').value.trim(), carLot: $('carLot').value.trim(),
     priceYen: o.price, carYen: japanTotal, jpExtra, carRub: japanRub, jpyRate,
@@ -700,10 +721,16 @@ function buildClientPdf(){
   if(L.carMileage) carRows.push(['Пробег', esc(L.carMileage)+(/км/i.test(L.carMileage)?'':' км')]);
   if(L.carLot) carRows.push(['№ лота', esc(L.carLot)]);
   const carBox = carRows.length ? `<div class="carbox"><table>${carRows.map(([k,v])=>`<tr><td class="lbl">${k}</td><td>${v}</td></tr>`).join('')}</table></div>` : '';
+  const clientLines = [];
+  if(L.clientName) clientLines.push(`<div class="cl-name">${esc(L.clientName)}</div>`);
+  if(L.clientCity) clientLines.push(`<div>${esc(L.clientCity)}</div>`);
+  if(L.clientPhone) clientLines.push(`<div>${esc(L.clientPhone)}</div>`);
+  const clientBox = clientLines.length ? `<div class="clientbox">${clientLines.join('')}</div>` : '';
   const depositRow = L.deposit>0 ? `<tr class="dep"><td>Предоплата (депозит)</td><td class="v">−${fmt(L.deposit)} ₽</td></tr>` : '';
 
   const inner = `
   <h1>Расчёт стоимости автомобиля</h1>
+  ${clientBox}
   ${carBox}
   <p class="sub" style="margin-top:14px">Авто из Японии · ${L.auction} → Владивосток · ${specs}</p>
   <p class="sub">Дата расчёта: ${dd} · курс ${L.jpyRate||'—'} ₽/¥</p>
@@ -732,7 +759,7 @@ function buildClientPdf(){
 aSel.addEventListener('change', ()=>{ fillPorts(false); render(); });
 ['port','price','buytype','status','loyal','second','days',
  'owner','age','fuel','vol','power','cval','jpyRate','eurRate','broker','jpExtra','extra','margin','deposit',
- 'carModel','carYear','carGrade','carMileage','carLot']
+ 'carModel','carYear','carGrade','carMileage','carLot','clientName','clientCity','clientPhone']
   .forEach(id=>$(id).addEventListener('input', render));
 $('pdfBtn').addEventListener('click', buildClientPdf);
 loadState();
