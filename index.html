@@ -161,6 +161,13 @@ body[data-mode="sanction"] .sanction-only{display:block}
 body[data-mode="sanction"] .japan-only{display:none}
 .cfbox{background:var(--accent-soft);border:1px solid #cdd8ea;border-radius:8px;padding:10px 12px;font-size:13px;color:var(--accent);line-height:1.5}
 .cfbox b{color:var(--accent)}
+.miss-box{margin-top:12px;padding:13px 15px;border-radius:10px;font-size:14px;line-height:1.5}
+.miss-box.warn{border:2px solid var(--brand-red);background:#fff2f2;color:#8a1f24}
+.miss-box.ok{border:1.5px solid var(--good);background:#eef7f0;color:#1f6b40}
+.miss-box .mb-h{font-weight:800;font-size:14.5px;margin:0 0 6px}
+.miss-box ul{margin:6px 0 0;padding-left:20px}
+.miss-box li{margin:3px 0;font-weight:600}
+.miss-box .mb-note{margin-top:8px;font-size:12.5px;font-weight:400;opacity:.85}
 .aucphotos{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
 .aucphotos img{width:100%;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
 .aucphotos img.main{grid-column:span 4;height:180px}
@@ -196,6 +203,7 @@ body[data-mode="sanction"] .japan-only{display:none}
       <button type="button" id="aucBtn" class="pdfbtn">🔽 Загрузить данные и фото</button>
       <div class="hint" id="aucMsg" style="margin-top:8px"></div>
       <div id="aucPhotos" class="aucphotos"></div>
+      <div id="aucMissing" class="miss-box" style="display:none"></div>
     </div>
 
     <div class="card">
@@ -928,27 +936,55 @@ async function loadAuction(){
       if(opt){ aSel.value=opt.value; fillPorts(false); aucMatched=true; }
     }
     box.innerHTML = AUC.photos.map((u,i)=>`<img src="${u}" class="${i===0?'main':''}">`).join('');
-    // ——— проверка: что удалось, а что нет (ТЗ: не оставлять поля молча пустыми) ———
-    const miss=[];
-    if(!d.auction) miss.push('название аукциона');
-    if(!AUC.photos.length) miss.push('фотографии');
-    if(!d.lot) miss.push('номер лота');
-    if(!d.equip) miss.push('комплектация');
-    const warns=[];
-    if(!d.power) warns.push('мощность (л.с.)');
-    if(!d.priceYen) warns.push('цена');
-    let html = `✅ Загружено: <b>${d.model||'—'} ${d.year||''}</b>, ${d.color||'—'}`
+    // краткая строка-итог
+    msg.innerHTML = `✅ Загружено: <b>${d.model||'—'} ${d.year||''}</b>, ${d.color||'—'}`
       + (d.equip?` · ${d.equip}`:'') + ` · VIN ${d.vin||d.chassis||'—'} · лот ${d.lot||'—'}`
       + ` · аукцион ${d.auction||'—'}${d.auction&&!aucMatched?' (нет в списке — фрахт проверьте)':''} · ${AUC.photos.length} фото`
-      + (d.source==='banzai'?' <span style="color:var(--muted)">(превью-качество — без авторизации)</span>':'') + '.';
-    if(miss.length) html += `<br>⚠️ <b>Не удалось определить:</b> ${miss.join(', ')} — заполните вручную.`;
-    if(warns.length) html += `<br>ℹ️ Нет в источнике: ${warns.join(', ')} — впишите вручную.`;
-    msg.innerHTML = html;
+      + (d.source==='banzai'?' <span style="color:var(--muted)">(превью — без авторизации)</span>':'') + '.';
+    // ——— отдельная заметная панель: чего не хватает (ТЗ: не оставлять поля молча пустыми) ———
+    const miss=[];
+    if(!d.auction)          miss.push('название аукциона');
+    if(!AUC.photos.length)  miss.push('фотографии');
+    if(!d.lot)              miss.push('номер лота');
+    if(!d.equip)            miss.push('комплектация');
+    const warns=[];
+    if(!d.power)     warns.push('мощность (л.с.)');
+    if(!d.priceYen)  warns.push('цена авто');
+    showMissing(miss, warns);
     render();
   }catch(e){
     AUC = { photos: [], color:'', vin:'', auction:'', sourceUrl:'' };
-    msg.textContent = 'Не удалось автоматически загрузить: '+e.message+'. Заполните поля и фото вручную.';
+    msg.textContent = 'Не удалось автоматически загрузить: '+e.message+'.';
+    showMissing(['название аукциона','фотографии','номер лота','комплектация'], [], true);
   }
+}
+// заметная панель: какие данные не подгрузились и что править вручную
+function showMissing(miss, warns, failed){
+  const mb = $('aucMissing'); if(!mb) return;
+  warns = warns || [];
+  mb.style.display = 'block';
+  // всё загружено
+  if(!miss.length && !warns.length){
+    mb.className = 'miss-box ok';
+    mb.innerHTML = '<div class="mb-h">✅ Все данные загружены автоматически</div><div class="mb-note">Проверьте поля перед формированием PDF.</div>';
+    return;
+  }
+  // ключевые поля не загрузились — КРАСНАЯ панель
+  if(miss.length){
+    let h = failed
+      ? `<div class="mb-h">⚠️ Автозагрузка не сработала — заполните вручную</div>`
+      : `<div class="mb-h">⚠️ Не загрузилось — заполните вручную:</div>`;
+    h += `<ul>${miss.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+    if(warns.length) h += `<div class="mb-note">Также нет в источнике: ${warns.join(', ')}.</div>`;
+    h += `<div class="mb-note">Поля ниже редактируемые — впишите недостающее вручную.</div>`;
+    mb.className = 'miss-box warn';
+    mb.innerHTML = h;
+    return;
+  }
+  // ключевое всё есть, но чего-то нет в источнике — нейтральная панель
+  mb.className = 'miss-box ok';
+  mb.innerHTML = `<div class="mb-h">✅ Основное загружено</div>`
+    + `<div class="mb-note">Нет в источнике — впишите вручную: <b>${warns.join(', ')}</b>.</div>`;
 }
 $('aucBtn').addEventListener('click', loadAuction);
 
