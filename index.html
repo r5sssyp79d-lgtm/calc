@@ -805,6 +805,14 @@ const OWNER_RU = {person:'физлицо (личное пользование)',
 function buildClientPdf(){
   if(!LAST){ return; }
   const L = LAST;
+  // ТЗ: проверяем автозаполненные данные перед формированием PDF
+  const empty=[];
+  if(!L.carModel) empty.push('марка/модель');
+  if(!L.carEquip) empty.push('комплектация');
+  if(!L.carLot) empty.push('№ лота');
+  if(!(AUC && AUC.auction)) empty.push('аукцион');
+  if(!(AUC && AUC.photos && AUC.photos.length)) empty.push('фотографии');
+  if(empty.length && !confirm('Не заполнено: '+empty.join(', ')+'.\nСформировать PDF всё равно?')) return;
   const r = v => (v<0?'−':'')+fmt(Math.abs(v))+' ₽';
   const now = new Date();
   const dd = String(now.getDate()).padStart(2,'0')+'.'+String(now.getMonth()+1).padStart(2,'0')+'.'+now.getFullYear();
@@ -904,24 +912,38 @@ async function loadAuction(){
     const j = await r.json();
     if(!j.ok) throw new Error(j.error||'карточка не распознана');
     const d = j.data;
-    const set = (id,v)=>{ const el=$(id); if(el && v){ el.value=v; } };
+    const set = (id,v)=>{ const el=$(id); if(el && (v!==undefined && v!==null && v!=='')){ el.value=v; } };
     set('price', d.priceYen); set('vol', d.engineCc); set('power', d.power); set('fuel', d.fuel);
     set('carModel', d.model); set('carYear', d.year);
-    set('carGrade', d.grade); set('carMileage', d.mileage); set('carLot', d.lot);
+    set('carGrade', d.grade); set('carEquip', d.equip); set('carMileage', d.mileage); set('carLot', d.lot);
     // возраст авто из года выпуска (прикидка, при необходимости поправишь)
     if(d.year){ const diff=new Date().getFullYear()-(+d.year||0); $('age').value = diff<3?'u3':diff<5?'a35':diff<7?'a57':'a7'; }
     AUC = { photos: d.photosProxy||[], color:d.color||'', vin:d.chassis||'', auction:d.auction||'', date:(d.auctionDate||'')+(d.auctionTime?(' '+d.auctionTime):''), sourceUrl:d.sourceUrl||url };
-    // авто-подстановка аукциона в выпадашку (если такой есть в сетке)
+    // аукцион: имя из источника — главное (идёт в PDF). Дропдаун подставляем только по ТОЧНОМУ совпадению (для фрахта)
+    let aucMatched=false;
     if(d.auction && typeof aSel!=='undefined'){
       const norm=s=>String(s).toUpperCase().replace(/[^A-Z0-9]/g,''); // без пробелов/регистра
       const A=norm(d.auction);
-      let opt=[...aSel.options].find(o=>norm(o.textContent)===A);                       // точное совпадение
-      if(!opt && A.length>=5) opt=[...aSel.options].find(o=>norm(o.textContent).startsWith(A) || A.startsWith(norm(o.textContent)));
-      if(opt){ aSel.value=opt.value; fillPorts(false); }
+      const opt=[...aSel.options].find(o=>norm(o.textContent)===A);   // строго точное — без ложных срабатываний
+      if(opt){ aSel.value=opt.value; fillPorts(false); aucMatched=true; }
     }
     box.innerHTML = AUC.photos.map((u,i)=>`<img src="${u}" class="${i===0?'main':''}">`).join('');
-    msg.innerHTML = `✅ ${d.model||''} ${d.year||''}, ${d.color||''} · VIN ${d.vin||d.chassis||'—'} · ${AUC.photos.length} фото.`
-      + (d.power ? ` Мощность ${d.power} л.с.` : `<br>Мощность (л.с.) на аукционе нет — впишите вручную.`);
+    // ——— проверка: что удалось, а что нет (ТЗ: не оставлять поля молча пустыми) ———
+    const miss=[];
+    if(!d.auction) miss.push('название аукциона');
+    if(!AUC.photos.length) miss.push('фотографии');
+    if(!d.lot) miss.push('номер лота');
+    if(!d.equip) miss.push('комплектация');
+    const warns=[];
+    if(!d.power) warns.push('мощность (л.с.)');
+    if(!d.priceYen) warns.push('цена');
+    let html = `✅ Загружено: <b>${d.model||'—'} ${d.year||''}</b>, ${d.color||'—'}`
+      + (d.equip?` · ${d.equip}`:'') + ` · VIN ${d.vin||d.chassis||'—'} · лот ${d.lot||'—'}`
+      + ` · аукцион ${d.auction||'—'}${d.auction&&!aucMatched?' (нет в списке — фрахт проверьте)':''} · ${AUC.photos.length} фото`
+      + (d.source==='banzai'?' <span style="color:var(--muted)">(превью-качество — без авторизации)</span>':'') + '.';
+    if(miss.length) html += `<br>⚠️ <b>Не удалось определить:</b> ${miss.join(', ')} — заполните вручную.`;
+    if(warns.length) html += `<br>ℹ️ Нет в источнике: ${warns.join(', ')} — впишите вручную.`;
+    msg.innerHTML = html;
     render();
   }catch(e){
     AUC = { photos: [], color:'', vin:'', auction:'', sourceUrl:'' };
