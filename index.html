@@ -164,6 +164,7 @@ body[data-mode="sanction"] .japan-only{display:none}
 .miss-box{margin-top:12px;padding:13px 15px;border-radius:10px;font-size:14px;line-height:1.5}
 .miss-box.warn{border:2px solid var(--brand-red);background:#fff2f2;color:#8a1f24}
 .miss-box.ok{border:1.5px solid var(--good);background:#eef7f0;color:#1f6b40}
+.miss-box.attn{border:2px solid #e08a1e;background:#fff8ec;color:#8a5a12}
 .miss-box .mb-h{font-weight:800;font-size:14.5px;margin:0 0 6px}
 .miss-box ul{margin:6px 0 0;padding-left:20px}
 .miss-box li{margin:3px 0;font-weight:600}
@@ -950,41 +951,45 @@ async function loadAuction(){
     const warns=[];
     if(!d.power)     warns.push('мощность (л.с.)');
     if(!d.priceYen)  warns.push('цена авто');
-    showMissing(miss, warns);
+    showMissing(miss, warns, {freightManual: !!(d.auction && !aucMatched), auctionName: d.auction});
     render();
   }catch(e){
     AUC = { photos: [], color:'', vin:'', auction:'', sourceUrl:'' };
     msg.textContent = 'Не удалось автоматически загрузить: '+e.message+'.';
-    showMissing(['название аукциона','фотографии','номер лота','комплектация'], [], true);
+    showMissing(['название аукциона','фотографии','номер лота','комплектация'], [], {failed:true});
   }
 }
 // заметная панель: какие данные не подгрузились и что править вручную
-function showMissing(miss, warns, failed){
+function showMissing(miss, warns, opts){
   const mb = $('aucMissing'); if(!mb) return;
-  warns = warns || [];
+  opts = opts || {}; warns = warns || [];
+  const freight = opts.freightManual ? (opts.auctionName || 'аукцион') : '';
   mb.style.display = 'block';
-  // всё загружено
-  if(!miss.length && !warns.length){
-    mb.className = 'miss-box ok';
-    mb.innerHTML = '<div class="mb-h">✅ Все данные загружены автоматически</div><div class="mb-note">Проверьте поля перед формированием PDF.</div>';
-    return;
-  }
-  // ключевые поля не загрузились — КРАСНАЯ панель
+  // 1) ключевые поля не загрузились — КРАСНАЯ панель
   if(miss.length){
-    let h = failed
+    let h = opts.failed
       ? `<div class="mb-h">⚠️ Автозагрузка не сработала — заполните вручную</div>`
       : `<div class="mb-h">⚠️ Не загрузилось — заполните вручную:</div>`;
     h += `<ul>${miss.map(x=>`<li>${x}</li>`).join('')}</ul>`;
-    if(warns.length) h += `<div class="mb-note">Также нет в источнике: ${warns.join(', ')}.</div>`;
-    h += `<div class="mb-note">Поля ниже редактируемые — впишите недостающее вручную.</div>`;
-    mb.className = 'miss-box warn';
-    mb.innerHTML = h;
+    const extra = [];
+    if(freight) extra.push(`фрахт — аукцион «${freight}» не в тарифной сетке, выберите порт вручную`);
+    warns.forEach(w=>extra.push('нет в источнике: '+w));
+    if(extra.length) h += `<div class="mb-note">Также: ${extra.join('; ')}.</div>`;
+    h += `<div class="mb-note">Поля ниже редактируемые.</div>`;
+    mb.className = 'miss-box warn'; mb.innerHTML = h; return;
+  }
+  // 2) ключевое есть, но фрахт не определён или чего-то нет в источнике — ЯНТАРНАЯ «внимание»
+  if(freight || warns.length){
+    const items = [];
+    if(freight) items.push(`<li><b>Фрахт не определён</b>: аукцион «${freight}» не в тарифной сетке — <b>выберите порт вручную</b>, иначе итог по фрахту будет неверным.</li>`);
+    warns.forEach(w=>items.push(`<li>Нет в источнике: <b>${w}</b> — впишите вручную.</li>`));
+    mb.className = 'miss-box attn';
+    mb.innerHTML = `<div class="mb-h">⚠️ Требует проверки вручную</div><ul>${items.join('')}</ul>`;
     return;
   }
-  // ключевое всё есть, но чего-то нет в источнике — нейтральная панель
+  // 3) всё загружено и аукцион в сетке — ЗЕЛЁНАЯ
   mb.className = 'miss-box ok';
-  mb.innerHTML = `<div class="mb-h">✅ Основное загружено</div>`
-    + `<div class="mb-note">Нет в источнике — впишите вручную: <b>${warns.join(', ')}</b>.</div>`;
+  mb.innerHTML = '<div class="mb-h">✅ Все данные загружены автоматически</div><div class="mb-note">Проверьте поля перед формированием PDF.</div>';
 }
 $('aucBtn').addEventListener('click', loadAuction);
 
