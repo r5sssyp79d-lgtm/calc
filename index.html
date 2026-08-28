@@ -921,44 +921,60 @@ async function loadAuction(){
     const j = await r.json();
     if(!j.ok) throw new Error(j.error||'карточка не распознана');
     const d = j.data;
-    const set = (id,v)=>{ const el=$(id); if(el && (v!==undefined && v!==null && v!=='')){ el.value=v; } };
-    set('price', d.priceYen); set('vol', d.engineCc); set('power', d.power); set('fuel', d.fuel);
-    set('carModel', d.model); set('carYear', d.year);
-    set('carGrade', d.grade); set('carEquip', d.equip); set('carMileage', d.mileage); set('carLot', d.lot);
-    // возраст авто из года выпуска (прикидка, при необходимости поправишь)
-    if(d.year){ const diff=new Date().getFullYear()-(+d.year||0); $('age').value = diff<3?'u3':diff<5?'a35':diff<7?'a57':'a7'; }
-    AUC = { photos: d.photosProxy||[], color:d.color||'', vin:d.chassis||'', auction:d.auction||'', date:(d.auctionDate||'')+(d.auctionTime?(' '+d.auctionTime):''), sourceUrl:d.sourceUrl||url };
-    // аукцион: имя из источника — главное (идёт в PDF). Дропдаун подставляем только по ТОЧНОМУ совпадению (для фрахта)
-    let aucMatched=false;
-    if(d.auction && typeof aSel!=='undefined'){
-      const norm=s=>String(s).toUpperCase().replace(/[^A-Z0-9]/g,''); // без пробелов/регистра
-      const A=norm(d.auction);
-      const opt=[...aSel.options].find(o=>norm(o.textContent)===A);   // строго точное — без ложных срабатываний
-      if(opt){ aSel.value=opt.value; fillPorts(false); aucMatched=true; }
-    }
-    box.innerHTML = AUC.photos.map((u,i)=>`<img src="${u}" class="${i===0?'main':''}">`).join('');
-    // краткая строка-итог
-    msg.innerHTML = `✅ Загружено: <b>${d.model||'—'} ${d.year||''}</b>, ${d.color||'—'}`
-      + (d.equip?` · ${d.equip}`:'') + ` · VIN ${d.vin||d.chassis||'—'} · лот ${d.lot||'—'}`
-      + ` · аукцион ${d.auction||'—'}${d.auction&&!aucMatched?' (нет в списке — фрахт проверьте)':''} · ${AUC.photos.length} фото`
-      + (d.source==='banzai'?' <span style="color:var(--muted)">(превью — без авторизации)</span>':'') + '.';
-    // ——— отдельная заметная панель: чего не хватает (ТЗ: не оставлять поля молча пустыми) ———
-    const miss=[];
-    if(!d.auction)          miss.push('название аукциона');
-    if(!AUC.photos.length)  miss.push('фотографии');
-    if(!d.lot)              miss.push('номер лота');
-    if(!d.equip)            miss.push('комплектация');
-    const warns=[];
-    if(!d.power)     warns.push('мощность (л.с.)');
-    if(!d.priceYen)  warns.push('цена авто');
-    showMissing(miss, warns, {freightManual: !!(d.auction && !aucMatched), auctionName: d.auction});
-    render();
+    applyLot(d, d.photosProxy||[], false);
   }catch(e){
     AUC = { photos: [], color:'', vin:'', auction:'', sourceUrl:'' };
     msg.textContent = 'Не удалось автоматически загрузить: '+e.message+'.';
     showMissing(['название аукциона','фотографии','номер лота','комплектация'], [], {failed:true});
   }
 }
+// подстановка данных лота в поля (общая для сервера и для «моста» banzai)
+function applyLot(d, photos, fromBridge){
+  photos = photos || [];
+  const msg = $('aucMsg'), box = $('aucPhotos');
+  const set = (id,v)=>{ const el=$(id); if(el && (v!==undefined && v!==null && v!=='')){ el.value=v; } };
+  set('price', d.priceYen); set('vol', d.engineCc); set('power', d.power); set('fuel', d.fuel);
+  set('carModel', d.model); set('carYear', d.year);
+  set('carGrade', d.grade); set('carEquip', d.equip); set('carMileage', d.mileage); set('carLot', d.lot);
+  if(d.year){ const diff=new Date().getFullYear()-(+d.year||0); $('age').value = diff<3?'u3':diff<5?'a35':diff<7?'a57':'a7'; }
+  AUC = { photos: photos, color:d.color||'', vin:d.chassis||'', auction:d.auction||'', date:(d.auctionDate||'')+(d.auctionTime?(' '+d.auctionTime):''), sourceUrl:d.sourceUrl||'' };
+  // аукцион: имя из источника — главное (в PDF). Дропдаун подставляем только по ТОЧНОМУ совпадению (для фрахта)
+  let aucMatched=false;
+  if(d.auction && typeof aSel!=='undefined'){
+    const norm=s=>String(s).toUpperCase().replace(/[^A-Z0-9]/g,'');
+    const opt=[...aSel.options].find(o=>norm(o.textContent)===norm(d.auction));
+    if(opt){ aSel.value=opt.value; fillPorts(false); aucMatched=true; }
+  }
+  if(box) box.innerHTML = AUC.photos.map((u,i)=>`<img src="${u}" class="${i===0?'main':''}">`).join('');
+  if(msg) msg.innerHTML = `✅ Загружено: <b>${d.model||'—'} ${d.year||''}</b>, ${d.color||'—'}`
+    + (d.equip?` · ${d.equip}`:'') + ` · VIN ${d.vin||d.chassis||'—'} · лот ${d.lot||'—'}`
+    + ` · аукцион ${d.auction||'—'} · ${AUC.photos.length} фото`
+    + (fromBridge?' <b style="color:var(--good)">(оригиналы, вы залогинены)</b>':(d.source==='banzai'?' <span style="color:var(--muted)">(превью — без авторизации)</span>':'')) + '.';
+  const miss=[];
+  if(!d.auction)          miss.push('название аукциона');
+  if(!AUC.photos.length)  miss.push('фотографии');
+  if(!d.lot)              miss.push('номер лота');
+  if(!d.equip)            miss.push('комплектация');
+  const warns=[];
+  if(!d.power)     warns.push('мощность (л.с.)');
+  if(!d.priceYen)  warns.push('цена авто');
+  showMissing(miss, warns, {freightManual: !!(d.auction && !aucMatched), auctionName: d.auction});
+  render();
+}
+// ===== мост из banzai (кнопка-закладка на странице лота передаёт данные сюда) =====
+const BRIDGE_ORIGIN = 'https://banzai24.com';
+window.addEventListener('message', (e)=>{
+  if(e.origin !== BRIDGE_ORIGIN) return;              // принимаем только от banzai
+  const m = e.data || {};
+  if(m.type==='fujima-ping'){ try{ e.source.postMessage({type:'fujima-pong'}, e.origin); }catch(_){} return; }
+  if(m.type==='fujima-lot'){
+    try{
+      applyLot(m.data||{}, m.photos||[], true);
+      try{ document.querySelector('.tabs') && window.scrollTo(0,0); }catch(_){}
+      e.source.postMessage({type:'fujima-ack'}, e.origin);
+    }catch(err){ try{ e.source.postMessage({type:'fujima-err', error:String(err&&err.message||err)}, e.origin); }catch(_){} }
+  }
+});
 // заметная панель: какие данные не подгрузились и что править вручную
 function showMissing(miss, warns, opts){
   const mb = $('aucMissing'); if(!mb) return;
