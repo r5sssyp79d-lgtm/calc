@@ -719,7 +719,7 @@ function render(){
     japanRub = carKrw * krwRate;                      // ₽ стоимость авто (расходы по Корее включены)
     vladSub = `${fmt(price)} + расходы ${fmt(koreaExtra)} ₩ × ${krwRate||'—'}`;
     routeText = 'Авто из Южной Кореи';
-    carSub = `авто + расходы по Корее (${fmt(carKrw)} ₩)`;
+    carSub = `авто + расходы по Корее + фрахт (${fmt(carKrw)} ₩)`;
     $('routeBadge').textContent = 'Корея · ₩';
     let sh = `<tr><td>Цена автомобиля<small>${fmt(price)} ₩ × ${krwRate||'—'}</small></td><td class="v">${fmt(price*krwRate)} ₽</td></tr>`;
     if(koreaExtra) sh += `<tr><td>Расходы по Корее<small>${fmt(koreaExtra)} ₩ × ${krwRate||'—'}</small></td><td class="v">${fmt(koreaExtra*krwRate)} ₽</td></tr>`;
