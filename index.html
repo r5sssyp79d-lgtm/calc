@@ -159,12 +159,14 @@ table.cmp td.d{color:var(--muted);font-size:12.5px}
 .sanction-only{display:none}
 body[data-mode="sanction"] .sanction-only{display:block}
 body[data-mode="sanction"] .japan-only{display:none}
-/* Китай */
-.china-only{display:none}
+/* Китай и Корея */
+.china-only,.korea-only{display:none}
 body[data-mode="china"] .china-only{display:block}
-body[data-mode="china"] .japan-only{display:none}
-body[data-mode="china"] .sanction-only{display:none}
-body[data-mode="china"] .not-china{display:none}
+body[data-mode="china"] .japan-only,body[data-mode="china"] .sanction-only,
+body[data-mode="china"] .not-china,body[data-mode="china"] .jpmode-only{display:none}
+body[data-mode="korea"] .korea-only{display:block}
+body[data-mode="korea"] .japan-only,body[data-mode="korea"] .sanction-only,
+body[data-mode="korea"] .jpmode-only{display:none}
 .cfbox{background:var(--accent-soft);border:1px solid #cdd8ea;border-radius:8px;padding:10px 12px;font-size:13px;color:var(--accent);line-height:1.5}
 .cfbox b{color:var(--accent)}
 .miss-box{margin-top:12px;padding:13px 15px;border-radius:10px;font-size:14px;line-height:1.5}
@@ -195,7 +197,7 @@ body[data-mode="china"] .not-china{display:none}
 <div class="tabs" id="tabs">
   <button type="button" class="tab active" data-mode="japan">🇯🇵 Япония (аукцион)</button>
   <button type="button" class="tab" data-mode="sanction">🚫 Санкционный</button>
-  <button type="button" class="tab" data-mode="korea" disabled>🇰🇷 Корея<span class="soon">скоро</span></button>
+  <button type="button" class="tab" data-mode="korea">🇰🇷 Корея</button>
   <button type="button" class="tab" data-mode="china">🇨🇳 Китай</button>
 </div>
 
@@ -231,6 +233,9 @@ body[data-mode="china"] .not-china{display:none}
       </div>
       <div class="field sanction-only">
         <div class="cfbox">Фиксированный C&amp;F: расходы по Японии <b>$1 000</b> + фрахт <b>$1 500</b> = <b>$2 500</b>. Переводится в ₽ по курсу доллара и прибавляется к цене авто <b>после</b> её перевода из ¥ в ₽.</div>
+      </div>
+      <div class="field korea-only">
+        <div class="cfbox">Цена авто и расходы по Корее — в <b>вонах</b> (курс ₩ → ₽). Расходы по Корее входят в стоимость авто. Растаможка — по курсу €.</div>
       </div>
       <div class="field china-only">
         <div class="cfbox">Цена авто и расходы по Китаю — в <b>юанях</b> (курс ¥ юань → ₽). Расходы по Китаю входят в стоимость авто. Растаможка — по курсу €.</div>
@@ -322,13 +327,17 @@ body[data-mode="china"] .not-china{display:none}
     <div class="card">
       <h2>Курс и расходы</h2>
       <div class="row2">
-        <div class="field not-china">
+        <div class="field jpmode-only">
           <label for="jpyRate">Курс ¥ → ₽</label>
           <input type="number" id="jpyRate" value="0.55" min="0" step="0.01">
         </div>
         <div class="field china-only">
           <label for="cnyRate">Курс ¥ юань → ₽</label>
           <input type="number" id="cnyRate" value="12" min="0" step="0.1">
+        </div>
+        <div class="field korea-only">
+          <label for="krwRate">Курс ₩ вона → ₽</label>
+          <input type="number" id="krwRate" value="0.06" min="0" step="0.001">
         </div>
         <div class="field">
           <label for="eurRate">Курс € → ₽ (ЦБ)</label>
@@ -349,7 +358,7 @@ body[data-mode="china"] .not-china{display:none}
           <input type="number" id="company" value="0" min="0" step="1000">
         </div>
       </div>
-      <div class="field not-china">
+      <div class="field jpmode-only">
         <label for="jpExtra">Дополнительные расходы по Японии, ¥ <span style="text-transform:none;font-weight:400;letter-spacing:0">— необязательно</span></label>
         <input type="number" id="jpExtra" value="0" min="0" step="1000">
         <div class="hint">Прибавляется к итогу до Владивостока (в иенах, до пересчёта в рубли).</div>
@@ -363,6 +372,11 @@ body[data-mode="china"] .not-china{display:none}
         <label for="chinaWork">Стоимость работы китайской стороны, ¥ юань</label>
         <input type="number" id="chinaWork" value="0" min="0" step="100">
         <div class="hint">Запоминается и подставляется в следующий раз. Можно изменить вручную.</div>
+      </div>
+      <div class="field korea-only">
+        <label for="koreaExtra">Расходы по Корее, ₩</label>
+        <input type="number" id="koreaExtra" value="0" min="0" step="10000">
+        <div class="hint">Прибавляются к стоимости автомобиля (в вонах, до пересчёта в рубли).</div>
       </div>
       <div class="field">
         <label for="extra">Дополнительные расходы, ₽ <span style="text-transform:none;font-weight:400;letter-spacing:0">— необязательно</span></label>
@@ -580,7 +594,7 @@ function customs(o){
 
 /* ===== сохранение курса и сумм в браузере ===== */
 const STORE='autocalc_rf_v1';
-const PERSIST=['jpyRate','eurRate','usdRate','cnyRate','chinaWork','broker','company','extra','margin'];
+const PERSIST=['jpyRate','eurRate','usdRate','cnyRate','krwRate','chinaWork','koreaExtra','broker','company','extra','margin'];
 function saveState(){ try{ const s={}; PERSIST.forEach(id=>s[id]=$(id).value); localStorage.setItem(STORE, JSON.stringify(s)); }catch(e){} }
 function loadState(){ try{ const s=JSON.parse(localStorage.getItem(STORE)||'{}'); PERSIST.forEach(id=>{ if($(id)&&s[id]!=null&&s[id]!=='') $(id).value=s[id]; }); }catch(e){} }
 
@@ -697,6 +711,21 @@ function render(){
     sh += `<tr class="total"><td>Стоимость автомобиля</td><td class="v">${fmt(japanRub)} ₽</td></tr>`;
     $('out').innerHTML = sh;
     const ph=$('priceHint'); ph.className='hint'; ph.textContent = price ? '' : 'Введите цену авто в юанях.';
+  } else if(mode==='korea'){
+    const krwRate = +$('krwRate').value||0;
+    const koreaExtra = +$('koreaExtra').value||0;     // воны — расходы по Корее (в стоимость авто)
+    const carKrw = price + koreaExtra;
+    japanTotal = carKrw;                              // воны (для отображения)
+    japanRub = carKrw * krwRate;                      // ₽ стоимость авто (расходы по Корее включены)
+    vladSub = `${fmt(price)} + расходы ${fmt(koreaExtra)} ₩ × ${krwRate||'—'}`;
+    routeText = 'Авто из Южной Кореи';
+    carSub = `авто + расходы по Корее (${fmt(carKrw)} ₩)`;
+    $('routeBadge').textContent = 'Корея · ₩';
+    let sh = `<tr><td>Цена автомобиля<small>${fmt(price)} ₩ × ${krwRate||'—'}</small></td><td class="v">${fmt(price*krwRate)} ₽</td></tr>`;
+    if(koreaExtra) sh += `<tr><td>Расходы по Корее<small>${fmt(koreaExtra)} ₩ × ${krwRate||'—'}</small></td><td class="v">${fmt(koreaExtra*krwRate)} ₽</td></tr>`;
+    sh += `<tr class="total"><td>Стоимость автомобиля</td><td class="v">${fmt(japanRub)} ₽</td></tr>`;
+    $('out').innerHTML = sh;
+    const ph=$('priceHint'); ph.className='hint'; ph.textContent = price ? '' : 'Введите цену авто в вонах.';
   } else {
   const ai=+aSel.value, pj=+$('port').value;
   const o = {
@@ -811,7 +840,7 @@ function render(){
 
   /* ===== итоговая стоимость автомобиля ===== */
   const broker=+$('broker').value||0, company=+$('company').value||0, extraRub=+$('extra').value||0, margin=+$('margin').value||0, deposit=+$('deposit').value||0;
-  const cnyRate=+$('cnyRate').value||0, chinaWork=+$('chinaWork').value||0;
+  const cnyRate=+$('cnyRate').value||0, chinaWork=+$('chinaWork').value||0, krwRate=+$('krwRate').value||0;
   const workRub = chinaWork*cnyRate;
   const carWithMargin = japanRub + margin;   // Китай: маржа входит в стоимость авто (скрыта от клиента)
   const fin=[];
@@ -827,7 +856,7 @@ function render(){
   } else {
     grand = japanRub + cu.total + broker + company + extraRub + margin - deposit;
     fin.push(['Стоимость автомобиля (до Владивостока)', rub(japanRub), vladSub]);
-    fin.push(['Курс', `${jpyRate||'—'} ₽/¥`, `для пошлины € → ₽: ${co.eurRate||'—'}`]);
+    fin.push(['Курс', mode==='korea'?`${krwRate||'—'} ₽/₩`:`${jpyRate||'—'} ₽/¥`, `для пошлины € → ₽: ${co.eurRate||'—'}`]);
     fin.push(['Растаможка', rub(cu.total), 'пошлина + утильсбор + сбор' + (co.owner==='company'?' + акциз + НДС':'')]);
     fin.push(['Услуги брокера', rub(broker), '']);
     fin.push(['Услуги компании', rub(company), '']);
@@ -848,7 +877,7 @@ function render(){
     carModel: $('carModel').value.trim(), carYear: $('carYear').value.trim(),
     carGrade: $('carGrade').value.trim(), carEquip: $('carEquip').value.trim(), carMileage: $('carMileage').value.trim(), carLot: $('carLot').value.trim(),
     carComment: $('carComment').value.trim(),
-    mode, priceYen: price, carYen: japanTotal, jpExtra, carRub: (mode==='china'?carWithMargin:japanRub), jpyRate, cnyRate, chinaWorkRub: workRub,
+    mode, priceYen: price, carYen: japanTotal, jpExtra, carRub: (mode==='china'?carWithMargin:japanRub), jpyRate, cnyRate, krwRate, chinaWorkRub: workRub,
     owner: co.owner, age: co.age, fuel: co.fuel, vol: co.vol, power: co.power,
     cval, duty: cu.duty, excise: cu.excise, vat: cu.vat, util: cu.util, fee: cu.fee,
     customs: cu.total, taxable: cu.taxable,
@@ -885,13 +914,14 @@ function buildClientPdf(){
   custRows.push(['Утилизационный сбор', L.util]);
   custRows.push(['Таможенный сбор за оформление', L.fee]);
   const subRows = custRows.map(([n,v])=>`<tr class="sub"><td>${n}</td><td class="v">${r(v)}</td></tr>`).join('');
-  const specs = `${FUEL_RU[L.fuel]||L.fuel}, ${fmt(L.vol)} см³, ${L.power} л.с., ${AGE_RU[L.age]||L.age}`;
+  const specs = [FUEL_RU[L.fuel]||L.fuel, fmt(L.vol)+' см³', (+L.power>0 ? L.power+' л.с.' : ''), AGE_RU[L.age]||L.age].filter(Boolean).join(', ');
   const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const carRows = [];
   if(L.carModel) carRows.push(['Марка и модель', esc(L.carModel)]);
   if(L.carYear) carRows.push(['Год выпуска', esc(L.carYear)]);
   if(L.carEquip) carRows.push(['Комплектация', esc(L.carEquip)]);
-  if(L.carGrade) carRows.push(['Оценка', esc(L.carGrade)]);
+  if(L.carGrade && L.mode!=='china' && L.mode!=='korea') carRows.push(['Оценка', esc(L.carGrade)]);
+  if(+L.power>0) carRows.push(['Мощность', L.power+' л.с.']);
   if(L.carMileage) carRows.push(['Пробег', esc(L.carMileage)+(/км/i.test(L.carMileage)?'':' км')]);
   if(AUC.color) carRows.push(['Цвет', esc(AUC.color)]);
   if(AUC.vin) carRows.push(['Кузов / VIN', esc(AUC.vin)]);
@@ -909,6 +939,7 @@ function buildClientPdf(){
   const commentHtml = L.carComment ? `<div class="comment"><h2>Комментарий по автомобилю</h2><div class="ctext">${esc(L.carComment)}</div></div>` : '';
 
   const isChina = L.mode==='china';
+  const isKorea = L.mode==='korea';
   const carTitle = isChina ? 'Стоимость автомобиля' : 'Стоимость автомобиля до Владивостока';
   const carSubLine = L.carSub || (isChina ? '' : ('до Владивостока (' + fmt(L.carYen) + ' ¥)'));
   const serviceRows = isChina
@@ -917,9 +948,11 @@ function buildClientPdf(){
     : `<tr class="head"><td>Услуги брокера</td><td class="v">${r(L.broker)}</td></tr>`
       + `<tr class="head"><td>Услуги компании</td><td class="v">${r(L.companyPdf)}</td></tr>`
       + (L.extra>0?`<tr class="head"><td>Дополнительные расходы по России</td><td class="v">${r(L.extra)}</td></tr>`:'');
-  const routeLine = isChina ? esc(L.routeText||'Авто из Китая')
+  const routeLine = (isChina||isKorea) ? esc(L.routeText||'')
     : (AUC.auction ? ('Авто из Японии · '+esc(AUC.auction)+' → Владивосток') : (L.routeText||'Авто из Японии · Владивосток'));
-  const rateLine = isChina ? `Дата расчёта: ${dd} · курс ${L.cnyRate||'—'} ₽/¥ юань` : `Дата расчёта: ${dd} · курс ${L.jpyRate||'—'} ₽/¥`;
+  const rateLine = isChina ? `Дата расчёта: ${dd} · курс ${L.cnyRate||'—'} ₽/¥ юань`
+    : isKorea ? `Дата расчёта: ${dd} · курс ${L.krwRate||'—'} ₽/₩`
+    : `Дата расчёта: ${dd} · курс ${L.jpyRate||'—'} ₽/¥`;
 
   const inner = `
   <section class="pg pg-info">
@@ -967,7 +1000,7 @@ function buildClientPdf(){
 
 aSel.addEventListener('change', ()=>{ fillPorts(false); render(); });
 ['port','price','buytype','status','loyal','second','days',
- 'owner','age','fuel','vol','power','cval','jpyRate','eurRate','usdRate','cnyRate','chinaExtra','chinaWork','broker','company','jpExtra','extra','margin','deposit',
+ 'owner','age','fuel','vol','power','cval','jpyRate','eurRate','usdRate','cnyRate','chinaExtra','chinaWork','krwRate','koreaExtra','broker','company','jpExtra','extra','margin','deposit',
  'carModel','carYear','carGrade','carEquip','carMileage','carLot','carComment','clientName','clientCity','clientPhone']
   .forEach(id=>$(id).addEventListener('input', render));
 $('pdfBtn').addEventListener('click', buildClientPdf);
@@ -1076,6 +1109,7 @@ $('aucBtn').addEventListener('click', loadAuction);
 const MODE_TITLES = {
   japan:    { title:'Расходы на автомобиль из Японии', sub:'Базис <b>C&amp;F Владивосток (RO-RO)</b> · тарифная сетка от <b>22.05.2026</b>', src:'Автомобиль и маршрут', price:'Цена на аукционе, ¥' },
   sanction: { title:'Санкционный ввоз — расчёт', sub:'Фиксированный <b>C&amp;F $2 500</b> · растаможка РФ (2026)', src:'Автомобиль', price:'Цена авто, ¥' },
+  korea:    { title:'Расходы на автомобиль из Южной Кореи', sub:'Цена и расходы в <b>вонах</b> · растаможка РФ (2026) по курсу €', src:'Автомобиль', price:'Цена автомобиля, ₩' },
   china:    { title:'Расходы на автомобиль из Китая', sub:'Цена и расходы в <b>юанях</b> · растаможка РФ (2026) по курсу €', src:'Автомобиль', price:'Цена автомобиля, ¥ юань' },
 };
 function switchMode(m){
