@@ -900,7 +900,7 @@ function buildClientPdf(){
   if(!L.carModel) empty.push('марка/модель');
   if(!L.carEquip) empty.push('комплектация');
   if(!L.carLot) empty.push('№ лота');
-  if(!(AUC && AUC.auction)) empty.push('аукцион');
+  if(!(AUC && AUC.auction) && !['china','korea'].includes(document.body.dataset.mode)) empty.push('аукцион');
   if(!(AUC && AUC.photos && AUC.photos.length)) empty.push('фотографии');
   if(empty.length && !confirm('Не заполнено: '+empty.join(', ')+'.\nСформировать PDF всё равно?')) return;
   const r = v => (v<0?'−':'')+fmt(Math.abs(v))+' ₽';
@@ -1027,6 +1027,10 @@ async function loadAuction(){
 // подстановка данных лота в поля (общая для сервера и для «моста» banzai)
 function applyLot(d, photos, fromBridge){
   photos = photos || [];
+  // che168 — это Китай: сразу переключаем режим, иначе цена уйдёт в иены
+  if(d.source==='che168' && document.body.dataset.mode!=='china') switchMode('china');
+  // у Китая/Кореи аукциона нет — не требуем его и не пишем «аукцион —»
+  const noAuc = d.source==='che168' || ['china','korea'].includes(document.body.dataset.mode);
   const msg = $('aucMsg'), box = $('aucPhotos');
   const set = (id,v)=>{ const el=$(id); if(el && (v!==undefined && v!==null && v!=='')){ el.value=v; } };
   set('price', d.priceYen); set('vol', d.engineCc); set('power', d.power); set('fuel', d.fuel);
@@ -1044,10 +1048,10 @@ function applyLot(d, photos, fromBridge){
   if(box) box.innerHTML = AUC.photos.map((u,i)=>`<img src="${u}" class="${i===0?'main':''}">`).join('');
   if(msg) msg.innerHTML = `✅ Загружено: <b>${d.model||'—'} ${d.year||''}</b>, ${d.color||'—'}`
     + (d.equip?` · ${d.equip}`:'') + ` · VIN ${d.vin||d.chassis||'—'} · лот ${d.lot||'—'}`
-    + ` · аукцион ${d.auction||'—'} · ${AUC.photos.length} фото`
+    + (noAuc ? '' : ` · аукцион ${d.auction||'—'}`) + ` · ${AUC.photos.length} фото`
     + (fromBridge?' <b style="color:var(--good)">(оригиналы, вы залогинены)</b>':(d.source==='banzai'?' <span style="color:var(--muted)">(превью — без авторизации)</span>':'')) + '.';
   const miss=[];
-  if(!d.auction)          miss.push('название аукциона');
+  if(!d.auction && !noAuc) miss.push('название аукциона');
   if(!AUC.photos.length)  miss.push('фотографии');
   if(!d.lot)              miss.push('номер лота');
   if(!d.equip)            miss.push('комплектация');
