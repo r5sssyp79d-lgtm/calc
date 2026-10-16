@@ -313,9 +313,9 @@ body[data-mode="korea"] .jpmode-only{display:none}
         </div>
       </div>
       <div class="field">
-        <label for="power">Мощность, л.с.</label>
+        <label for="power">Мощность, л.с. <span style="text-transform:none;font-weight:400;letter-spacing:0;color:var(--muted)">— для электро: 30-минутная из ЭПТС</span></label>
         <input type="number" id="power" value="0" min="0" step="1" placeholder="0">
-        <div class="hint">Для акциза (юрлицо) и льготного утильсбора (физлицо ≤ 160 л.с.).</div>
+        <div class="hint" id="powerHint">Для акциза (юрлицо) и льготного утильсбора (физлицо ≤ 160 л.с.).</div>
       </div>
       <div class="field">
         <label for="cval">Таможенная стоимость, ₽</label>
@@ -822,6 +822,27 @@ function render(){
   const cu = customs(co);
   $('custBadge').textContent = co.owner==='person' ? 'физлицо · личное' : co.owner==='resale' ? 'физлицо · перепродажа' : 'юрлицо';
   $('cvalHint').textContent = cvalInput!=='' ? 'Задано вручную.' : `Подставлен итог по Японии: ${fmt(cval)} ₽.`;
+  // подсказка по мощности: у электро льгота считается по 30-минутной мощности из ЭПТС, а не по пиковой
+  (function(){
+    const ph=$('powerHint'); if(!ph) return;
+    const evLike = co.fuel==='electro' || co.fuel==='hyb_ser';
+    if(!evLike){
+      ph.className='hint';
+      ph.innerHTML='Для акциза (юрлицо) и льготного утильсбора (физлицо ≤ 160 л.с. и ≤ 3 000 см³).';
+      return;
+    }
+    const kw = co.power/1.35962;
+    let t = 'Укажите <b>30-минутную</b> мощность из ЭПТС, <b>не пиковую</b>. Порог льготы по утильсбору — 58,84 кВт (80 л.с.).';
+    if(co.power>0){
+      const ok = kw <= 58.84;
+      t = `${co.power} л.с. = <b>${kw.toFixed(1)} кВт</b> — ` + (ok
+        ? '✅ льготный утильсбор проходит.'
+        : '⚠️ выше порога 58,84 кВт — утильсбор коммерческий (миллионы).')
+        + ' Берите <b>30-минутную</b> мощность из ЭПТС, не пиковую.';
+      ph.className = ok ? 'hint' : 'hint warn';
+    } else { ph.className='hint'; }
+    ph.innerHTML = t + ' Если 30-минутной нет — ориентир: пиковая × 0,45.';
+  })();
 
   const rub = v => (v<0?'−':'')+fmt(Math.abs(v))+' ₽';
   const custLines = [['Таможенная пошлина', cu.duty, cu.dutyNote]];
