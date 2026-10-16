@@ -206,7 +206,7 @@ body[data-mode="korea"] .jpmode-only{display:none}
     <div class="card" id="aucCard">
       <h2>Загрузка с аукциона</h2>
       <div class="field">
-        <label for="aucUrl">Ссылка на аукцион (bushinu / banzai24) или № лота</label>
+        <label for="aucUrl">Ссылка на аукцион (bushinu / banzai24) или № лота <span style="text-transform:none;font-weight:400;letter-spacing:0;color:var(--muted)">— che168 только через кнопку-закладку</span></label>
         <input type="text" id="aucUrl" placeholder="banzai24.com/car/JP/… или auc.bushinu.ru/aj-….htm">
       </div>
       <button type="button" id="aucBtn" class="pdfbtn">🔽 Загрузить данные и фото</button>
@@ -348,12 +348,12 @@ body[data-mode="korea"] .jpmode-only{display:none}
         <label for="usdRate">Курс $ → ₽ <span style="text-transform:none;font-weight:400;letter-spacing:0">— для санкционного C&amp;F</span></label>
         <input type="number" id="usdRate" value="82" min="0" step="0.1">
       </div>
-      <div class="row2 not-china">
+      <div class="row2">
         <div class="field">
           <label for="broker">Услуги брокера, ₽</label>
           <input type="number" id="broker" value="60000" min="0" step="1000">
         </div>
-        <div class="field">
+        <div class="field not-china">
           <label for="company">Услуги компании, ₽</label>
           <input type="number" id="company" value="0" min="0" step="1000">
         </div>
@@ -569,7 +569,7 @@ function customs(o){
   // Акциз и НДС: для ДВС/гибрида — только юрлица; для электро — и физлица, и юрлица
   const taxable = electric || o.owner==='company';
   const excise = taxable ? pick(CUSTOMS.excise,hp)[1]*hp : 0;
-  const vat = taxable ? (cval+duty+excise)*0.20 : 0; // 20 % от (стоимость + пошлина + акциз)
+  const vat = taxable ? (cval+duty+excise)*0.22 : 0; // 22 % с 01.01.2026 (от стоимости + пошлины + акциза)
   let util, utilNote;
   const B = CUSTOMS.utilBase;
   const evGroup = electric || o.fuel==='hyb_ser'; // электро и последовательный гибрид — по мощности
@@ -826,7 +826,7 @@ function render(){
   const rub = v => (v<0?'−':'')+fmt(Math.abs(v))+' ₽';
   const custLines = [['Таможенная пошлина', cu.duty, cu.dutyNote]];
   if(cu.taxable) custLines.push(['Акциз', cu.excise, (cu.excise?'по мощности '+co.power+' л.с.':'до 90 л.с. — 0')+(co.fuel==='electro'&&co.owner==='person'?' · электро, платит физлицо':'')]);
-  if(cu.taxable) custLines.push(['НДС 20 %', cu.vat, '(стоимость + пошлина + акциз)'+(co.fuel==='electro'&&co.owner==='person'?' · электро, платит физлицо':'')]);
+  if(cu.taxable) custLines.push(['НДС 22 %', cu.vat, '(стоимость + пошлина + акциз)'+(co.fuel==='electro'&&co.owner==='person'?' · электро, платит физлицо':'')]);
   custLines.push(['Утилизационный сбор', cu.util, cu.utilNote]);
   custLines.push(['Таможенный сбор за оформление', cu.fee, `таможенная стоимость ${fmt(cval)} ₽`]);
   let ch='';
@@ -842,16 +842,17 @@ function render(){
   const broker=+$('broker').value||0, company=+$('company').value||0, extraRub=+$('extra').value||0, margin=+$('margin').value||0, deposit=+$('deposit').value||0;
   const cnyRate=+$('cnyRate').value||0, chinaWork=+$('chinaWork').value||0, krwRate=+$('krwRate').value||0;
   const workRub = chinaWork*cnyRate;
-  const carWithMargin = japanRub + margin;   // Китай: маржа входит в стоимость авто (скрыта от клиента)
   const fin=[];
   let grand;
   if(mode==='china'){
-    grand = carWithMargin + cu.total + workRub + extraRub - deposit;
-    fin.push(['Стоимость автомобиля', rub(carWithMargin), carSub]);
+    grand = japanRub + cu.total + workRub + broker + extraRub + margin - deposit;
+    fin.push(['Стоимость автомобиля', rub(japanRub), carSub]);
     fin.push(['Курс', `${cnyRate||'—'} ₽/¥ юань`, `для пошлины € → ₽: ${co.eurRate||'—'}`]);
     fin.push(['Растаможка', rub(cu.total), 'пошлина + утильсбор + сбор' + (co.owner==='company'?' + акциз + НДС':'')]);
     fin.push(['Работа китайской стороны', rub(workRub), `${fmt(chinaWork)} ¥ юань × ${cnyRate||'—'}`]);
+    fin.push(['Услуги брокера', rub(broker), '']);
     if(extraRub>0) fin.push(['Дополнительные расходы', rub(extraRub), '']);
+    fin.push(['Маржа компании', rub(margin), margin?'отдельной строкой':'не задана']);
     if(deposit>0) fin.push(['Депозит (предоплата)', '−'+fmt(deposit)+' ₽', 'вычитается из итога']);
   } else {
     grand = japanRub + cu.total + broker + company + extraRub + margin - deposit;
@@ -877,7 +878,7 @@ function render(){
     carModel: $('carModel').value.trim(), carYear: $('carYear').value.trim(),
     carGrade: $('carGrade').value.trim(), carEquip: $('carEquip').value.trim(), carMileage: $('carMileage').value.trim(), carLot: $('carLot').value.trim(),
     carComment: $('carComment').value.trim(),
-    mode, priceYen: price, carYen: japanTotal, jpExtra, carRub: (mode==='china'?carWithMargin:japanRub), jpyRate, cnyRate, krwRate, chinaWorkRub: workRub,
+    mode, priceYen: price, carYen: japanTotal, jpExtra, carRub: japanRub, jpyRate, cnyRate, krwRate, chinaWorkRub: workRub,
     owner: co.owner, age: co.age, fuel: co.fuel, vol: co.vol, power: co.power,
     cval, duty: cu.duty, excise: cu.excise, vat: cu.vat, util: cu.util, fee: cu.fee,
     customs: cu.total, taxable: cu.taxable,
@@ -910,7 +911,7 @@ function buildClientPdf(){
   const custRows = [];
   custRows.push(['Таможенная пошлина', L.duty]);
   if(L.taxable && L.excise>0) custRows.push(['Акциз', L.excise]);
-  if(L.taxable && L.vat>0) custRows.push(['НДС 20 %', L.vat]);
+  if(L.taxable && L.vat>0) custRows.push(['НДС 22 %', L.vat]);
   custRows.push(['Утилизационный сбор', L.util]);
   custRows.push(['Таможенный сбор за оформление', L.fee]);
   const subRows = custRows.map(([n,v])=>`<tr class="sub"><td>${n}</td><td class="v">${r(v)}</td></tr>`).join('');
@@ -944,7 +945,9 @@ function buildClientPdf(){
   const carSubLine = L.carSub || (isChina ? '' : ('до Владивостока (' + fmt(L.carYen) + ' ¥)'));
   const serviceRows = isChina
     ? `<tr class="head"><td>Работа китайской стороны</td><td class="v">${r(L.chinaWorkRub||0)}</td></tr>`
+      + `<tr class="head"><td>Услуги брокера</td><td class="v">${r(L.broker)}</td></tr>`
       + (L.extra>0?`<tr class="head"><td>Дополнительные расходы</td><td class="v">${r(L.extra)}</td></tr>`:'')
+      + `<tr class="head"><td>Маржа компании</td><td class="v">${r(L.margin)}</td></tr>`
     : `<tr class="head"><td>Услуги брокера</td><td class="v">${r(L.broker)}</td></tr>`
       + `<tr class="head"><td>Услуги компании</td><td class="v">${r(L.companyPdf)}</td></tr>`
       + (L.extra>0?`<tr class="head"><td>Дополнительные расходы по России</td><td class="v">${r(L.extra)}</td></tr>`:'');
@@ -1062,9 +1065,10 @@ function applyLot(d, photos, fromBridge){
   render();
 }
 // ===== мост из banzai (кнопка-закладка на странице лота передаёт данные сюда) =====
-const BRIDGE_ORIGIN = 'https://banzai24.com';
+const BRIDGE_HOSTS = /(^|\.)(banzai24\.com|che168\.com)$/i;   // только эти сайты
 window.addEventListener('message', (e)=>{
-  if(e.origin !== BRIDGE_ORIGIN) return;              // принимаем только от banzai
+  let _h=''; try{ _h=new URL(e.origin).hostname; }catch(_){ return; }
+  if(!BRIDGE_HOSTS.test(_h)) return;                  // принимаем только от banzai24 / che168
   const m = e.data || {};
   if(m.type==='fujima-ping'){ try{ e.source.postMessage({type:'fujima-pong'}, e.origin); }catch(_){} return; }
   if(m.type==='fujima-lot'){
